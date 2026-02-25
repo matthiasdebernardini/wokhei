@@ -1,0 +1,169 @@
+# Wokhei — Agent Skill Guide
+
+## What is Wokhei?
+
+Wokhei is an **agent-first** Rust CLI for creating and publishing **Decentralized List** events on Nostr using the DCoSL protocol. Every command returns structured JSON with `next_actions` — no plain text ever.
+
+## JSON Envelope
+
+Every response has this exact shape:
+
+```json
+{
+  "ok": true|false,
+  "schema_version": "wokhei.v1",
+  "command": "command-name",
+  "timestamp": "ISO-8601 UTC",
+  "result": { ... },       // present when ok=true
+  "error": {               // present when ok=false
+    "message": "...",
+    "code": "ERROR_CODE",
+    "retryable": false
+  },
+  "fix": "suggestion",     // present when ok=false
+  "next_actions": [
+    {
+      "command": "wokhei ...",
+      "description": "What this does"
+    }
+  ]
+}
+```
+
+## How to Follow next_actions
+
+After every command, read `next_actions`. Each entry is a runnable command template. Fill in any `<placeholder>` values with real data from previous results, then execute.
+
+## Relay URLs
+
+- **Dev (local)**: `ws://localhost:7777` (default — requires `docker compose up -d` in `strfry/`)
+- **Prod**: `wss://dcosl.brainstorm.world`
+
+## Workflow
+
+### 1. Initialize Keys
+
+```bash
+wokhei init --generate
+```
+
+Returns `pubkey` (hex) and `npub` (bech32). Keys saved to `~/.wokhei/keys`.
+
+### 2. Create a List Header
+
+Regular (kind 9998):
+```bash
+wokhei create-header --relay ws://localhost:7777 --name playlist --title "Jazz Favorites" --tags jazz,music
+```
+
+Addressable (kind 39998) — persists across updates, keyed by d-tag:
+```bash
+wokhei create-header --relay ws://localhost:7777 --name genres --title "Music Genres" --addressable --d-tag music-genres
+```
+
+### 3. Add Items to the List
+
+By header event ID (fetches header to auto-detect kind):
+```bash
+wokhei add-item --relay ws://localhost:7777 --header <event-id> --resource "https://example.com/song" --fields "title=Kind of Blue,artist=Miles Davis"
+```
+
+By coordinate (cross-relay, no lookup needed):
+```bash
+wokhei add-item --relay ws://localhost:7777 --header-coordinate "39998:<pubkey>:<d-tag>" --resource jazz
+```
+
+### 4. Query and Verify
+
+```bash
+wokhei list-headers --relay ws://localhost:7777
+wokhei list-items --relay ws://localhost:7777 <header-event-id>
+wokhei inspect --relay ws://localhost:7777 <event-id>
+```
+
+### 5. Delete (NIP-09)
+
+```bash
+wokhei delete --relay ws://localhost:7777 <event-id>
+```
+
+**Caveat**: Deletion is a NIP-09 REQUEST — relays may or may not honor it.
+
+## Tag Schema Reference
+
+### Header Tags (kinds 9998/39998)
+
+| Tag | Description | Example |
+|-----|-------------|---------|
+| `names` | List name + aliases | `["names", "playlist", "playlists"]` |
+| `title` | Display title | `["title", "Jazz Favorites"]` |
+| `description` | Long description | `["description", "My curated jazz list"]` |
+| `required` | Required item fields | `["required", "url", "title"]` |
+| `recommended` | Optional item fields | `["recommended", "artist", "album"]` |
+| `t` | Topic hashtag | `["t", "jazz"]` |
+| `alt` | Alt text | `["alt", "DCoSL list: playlist — Jazz Favorites"]` |
+| `d` | Identifier (addressable) | `["d", "music-genres"]` |
+| `client` | Client identifier | `["client", "wokhei"]` |
+
+### Item Tags (kinds 9999/39999)
+
+| Tag | Description | Example |
+|-----|-------------|---------|
+| `e` | Header event ID ref | `["e", "<hex-id>"]` |
+| `a` | Header coordinate ref | `["a", "39998:<pubkey>:<d-tag>"]` |
+| `r` | Resource URL/ID | `["r", "https://example.com/song"]` |
+| `z` | Item type | `["z", "listItem"]` |
+| custom | Field key=value | `["title", "Kind of Blue"]` |
+
+### z-tag Values
+
+- `listItem` (default)
+- `relationship`
+- `set`
+- `superset`
+- `property`
+- `jsonSchema`
+
+## Error Handling
+
+1. Check `ok` field — `true` means success
+2. If `false`, read `error.code` for machine-readable classification
+3. Read `fix` for a human-readable suggestion
+4. Follow `next_actions` to recover
+
+### Error Codes
+
+| Code | Meaning | Retryable |
+|------|---------|-----------|
+| `KEYS_NOT_FOUND` | No keypair at ~/.wokhei/keys | No |
+| `RELAY_UNREACHABLE` | Can't connect to relay | Yes |
+| `RELAY_REJECTED` | Relay rejected event | No |
+| `HEADER_NOT_FOUND` | Header event ID not on relay | No |
+| `HEADER_MISSING_D_TAG` | Addressable header has no d tag | No |
+| `INVALID_EVENT_ID` | Bad event ID format | No |
+| `NO_RESULTS` | Query returned 0 events | No |
+| `INVALID_NSEC` | Bad nsec format on import | No |
+| `INVALID_ARGS` | Bad CLI arguments / help / version | No |
+| `INTERNAL_ERROR` | Panic / unexpected error | No |
+
+## When to Use --header vs --header-coordinate
+
+- **`--header <event-id>`**: Default mode. Fetches the header from the relay to auto-detect its kind and build the correct reference tag. Use when the header is on the same relay.
+- **`--header-coordinate <kind:pubkey:d-tag>`**: Detached mode. No relay lookup. Use for cross-relay references or when you already know the coordinate from a previous `create-header` result.
+
+## Event Kinds
+
+| Kind | Type | Usage |
+|------|------|-------|
+| 9998 | Regular | One-off list header |
+| 9999 | Regular | One-off list item |
+| 39998 | Addressable | Persistent list header (keyed by d-tag) |
+| 39999 | Addressable | Persistent list item (keyed by d-tag) |
+
+## Raw Event Publishing
+
+For custom events not covered by built-in commands:
+
+```bash
+echo '{"kind": 9998, "content": "", "tags": [["names", "test"], ["title", "Test"]]}' | wokhei publish --relay ws://localhost:7777 -
+```

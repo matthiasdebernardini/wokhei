@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+echo "==> pre-push: checking formatting..."
+cargo fmt -- --check
+echo "==> pre-push: running clippy..."
+cargo clippy --all-targets -- -W clippy::all -W clippy::pedantic -D warnings
+echo "==> pre-push: all checks passed."
