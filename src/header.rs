@@ -116,7 +116,7 @@ pub async fn create_header(params: HeaderParams) -> Result<CommandOutput, Comman
                 "event_id": event_id,
                 "kind": kind.as_u16(),
                 "pubkey": pubkey_hex,
-                "created_at": chrono::Utc::now().to_rfc3339(),
+                "created_at": jiff::Timestamp::now().to_string(),
                 "tags_count": params.tags_list.len(),
             });
 
