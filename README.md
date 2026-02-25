@@ -1,6 +1,6 @@
 # Wokhei
 
-Agent-first CLI for creating and publishing Decentralized List events on Nostr using the [DCoSL protocol](https://github.com/nickmccoy/brainstorm-knowledge-graph).
+Agent-first CLI for creating and publishing Decentralized List events on Nostr using the [DCoSL protocol](https://github.com/wds4/brainstorm-knowledge-graph).
 
 Every command returns structured JSON with `next_actions` — no plain text ever.
 
