@@ -1,9 +1,9 @@
+use agcli::{CommandError, CommandOutput, NextAction};
 use nostr_sdk::prelude::*;
 use serde_json::json;
 
 use crate::error::AppError;
 use crate::keys::load_keys;
-use crate::response::{NextAction, Response};
 
 pub struct HeaderParams {
     pub relay: String,
@@ -71,36 +71,23 @@ fn build_header_tags(params: &HeaderParams, kind: Kind) -> Vec<Tag> {
     event_tags
 }
 
-pub async fn create_header(params: HeaderParams) -> Response {
-    let cmd = "create-header";
-
-    let Ok(keys) = load_keys() else {
-        return Response::error(
-            cmd,
-            &AppError::KeysNotFound {
-                path: "~/.wokhei/keys".to_string(),
-            },
-            vec![NextAction::simple(
-                "wokhei init --generate",
-                "Generate a keypair first",
-            )],
-        );
-    };
+pub async fn create_header(params: HeaderParams) -> Result<CommandOutput, CommandError> {
+    let keys = load_keys().map_err(|e| {
+        CommandError::from(e).next_actions(vec![NextAction::new(
+            "wokhei init --generate",
+            "Generate a keypair first",
+        )])
+    })?;
 
     if params.addressable && params.d_tag.is_none() {
-        return Response::error(
-            cmd,
-            &AppError::Io {
-                reason: "--addressable requires --d-tag <identifier>".to_string(),
-            },
-            vec![NextAction::simple(
-                &format!(
-                    "wokhei create-header --relay {} --name {} --title \"{}\" --addressable --d-tag <identifier>",
-                    params.relay, params.name, params.title,
-                ),
-                "Re-run with --d-tag",
-            )],
-        );
+        return Err(CommandError::new(
+            "--addressable requires --d-tag <identifier>",
+            "MISSING_ARG",
+            format!(
+                "Re-run with: wokhei create-header --relay {} --name {} --title \"{}\" --addressable --d-tag <identifier>",
+                params.relay, params.name, params.title,
+            ),
+        ));
     }
 
     let kind = if params.addressable {
@@ -114,14 +101,13 @@ pub async fn create_header(params: HeaderParams) -> Response {
 
     let client = Client::builder().signer(keys.clone()).build();
     if client.add_relay(&params.relay).await.is_err() {
-        let err = AppError::RelayUnreachable {
+        return Err(CommandError::from(AppError::RelayUnreachable {
             url: params.relay.clone(),
-        };
-        return Response::error(cmd, &err, vec![]);
+        }));
     }
     client.connect().await;
 
-    match client.send_event_builder(builder).await {
+    let result = match client.send_event_builder(builder).await {
         Ok(output) => {
             let event_id = output.val.to_hex();
             let pubkey_hex = keys.public_key().to_hex();
@@ -140,18 +126,16 @@ pub async fn create_header(params: HeaderParams) -> Response {
             }
 
             let mut actions = vec![
-                NextAction::simple(
-                    &format!(
-                        "wokhei add-item --relay {relay} --header {event_id} --resource <url>"
-                    ),
+                NextAction::new(
+                    format!("wokhei add-item --relay {relay} --header {event_id} --resource <url>"),
                     "Add an item to this list",
                 ),
-                NextAction::simple(
-                    &format!("wokhei inspect --relay {relay} {event_id}"),
+                NextAction::new(
+                    format!("wokhei inspect --relay {relay} {event_id}"),
                     "Inspect the created header",
                 ),
-                NextAction::simple(
-                    &format!("wokhei list-headers --relay {relay}"),
+                NextAction::new(
+                    format!("wokhei list-headers --relay {relay}"),
                     "List all headers on this relay",
                 ),
             ];
@@ -160,24 +144,20 @@ pub async fn create_header(params: HeaderParams) -> Response {
                 let coord = format!("{}:{}:{}", kind.as_u16(), pubkey_hex, d);
                 actions.insert(
                     1,
-                    NextAction::simple(
-                        &format!(
-                            "wokhei add-item --relay {relay} --header-coordinate \"{coord}\" --resource <url>"
-                        ),
+                    NextAction::new(
+                        format!("wokhei add-item --relay {relay} --header-coordinate \"{coord}\" --resource <url>"),
                         "Add item using coordinate reference",
                     ),
                 );
             }
 
-            client.disconnect().await;
-            Response::success(cmd, result, actions)
+            Ok(CommandOutput::new(result).next_actions(actions))
         }
-        Err(e) => {
-            client.disconnect().await;
-            let err = AppError::RelayRejected {
-                reason: e.to_string(),
-            };
-            Response::error(cmd, &err, vec![])
-        }
-    }
+        Err(e) => Err(CommandError::from(AppError::RelayRejected {
+            reason: e.to_string(),
+        })),
+    };
+
+    client.disconnect().await;
+    result
 }

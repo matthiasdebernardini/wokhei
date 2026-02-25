@@ -4,62 +4,42 @@ use std::io::{self, Read as IoRead};
 use nostr_sdk::prelude::*;
 use serde_json::json;
 
+use agcli::{CommandError, CommandOutput, NextAction};
+
 use crate::error::AppError;
 use crate::keys::load_keys;
-use crate::response::{NextAction, Response};
 
-pub async fn publish(relay: String, input: String) -> Response {
-    let cmd = "publish";
-
-    let Ok(keys) = load_keys() else {
-        return Response::error(
-            cmd,
-            &AppError::KeysNotFound {
-                path: "~/.wokhei/keys".to_string(),
-            },
-            vec![NextAction::simple(
-                "wokhei init --generate",
-                "Generate a keypair first",
-            )],
-        );
-    };
+pub async fn publish(relay: String, input: String) -> Result<CommandOutput, CommandError> {
+    let keys = load_keys().map_err(|e| {
+        CommandError::from(e).next_actions(vec![NextAction::new(
+            "wokhei init --generate",
+            "Generate a keypair first",
+        )])
+    })?;
 
     // Read JSON input
     let json_str = if input == "-" {
         let mut buf = String::new();
-        if let Err(e) = io::stdin().read_to_string(&mut buf) {
-            return Response::error(
-                cmd,
-                &AppError::Io {
-                    reason: e.to_string(),
-                },
-                vec![],
-            );
-        }
+        io::stdin().read_to_string(&mut buf).map_err(|e| {
+            CommandError::from(AppError::Io {
+                reason: e.to_string(),
+            })
+        })?;
         buf
     } else {
-        let Ok(s) = fs::read_to_string(&input) else {
-            return Response::error(
-                cmd,
-                &AppError::Io {
-                    reason: format!("Failed to read {input}"),
-                },
-                vec![],
-            );
-        };
-        s
+        fs::read_to_string(&input).map_err(|_| {
+            CommandError::from(AppError::Io {
+                reason: format!("Failed to read {input}"),
+            })
+        })?
     };
 
     // Parse as unsigned event JSON
-    let Ok(raw) = serde_json::from_str::<serde_json::Value>(&json_str) else {
-        return Response::error(
-            cmd,
-            &AppError::InvalidJson {
-                reason: "Failed to parse JSON input".to_string(),
-            },
-            vec![],
-        );
-    };
+    let raw: serde_json::Value = serde_json::from_str(&json_str).map_err(|_| {
+        CommandError::from(AppError::InvalidJson {
+            reason: "Failed to parse JSON input".to_string(),
+        })
+    })?;
 
     // Extract kind, content, tags
     #[allow(clippy::cast_possible_truncation)] // Nostr kinds fit in u16
@@ -87,12 +67,13 @@ pub async fn publish(relay: String, input: String) -> Response {
 
     let client = Client::builder().signer(keys).build();
     if client.add_relay(&relay).await.is_err() {
-        let err = AppError::RelayUnreachable { url: relay.clone() };
-        return Response::error(cmd, &err, vec![]);
+        return Err(CommandError::from(AppError::RelayUnreachable {
+            url: relay.clone(),
+        }));
     }
     client.connect().await;
 
-    match client.send_event_builder(builder).await {
+    let result = match client.send_event_builder(builder).await {
         Ok(output) => {
             let event_id = output.val.to_hex();
             let result = json!({
@@ -100,20 +81,18 @@ pub async fn publish(relay: String, input: String) -> Response {
                 "kind": kind_num,
             });
 
-            let actions = vec![NextAction::simple(
-                &format!("wokhei inspect --relay {relay} {event_id}"),
+            let actions = vec![NextAction::new(
+                format!("wokhei inspect --relay {relay} {event_id}"),
                 "Inspect the published event",
             )];
 
-            client.disconnect().await;
-            Response::success(cmd, result, actions)
+            Ok(CommandOutput::new(result).next_actions(actions))
         }
-        Err(e) => {
-            client.disconnect().await;
-            let err = AppError::RelayRejected {
-                reason: e.to_string(),
-            };
-            Response::error(cmd, &err, vec![])
-        }
-    }
+        Err(e) => Err(CommandError::from(AppError::RelayRejected {
+            reason: e.to_string(),
+        })),
+    };
+
+    client.disconnect().await;
+    result
 }

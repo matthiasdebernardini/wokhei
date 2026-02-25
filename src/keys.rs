@@ -1,11 +1,12 @@
 use std::fs;
+use std::io::{self, Read as IoRead};
 use std::path::PathBuf;
 
+use agcli::{CommandError, CommandOutput, NextAction};
 use nostr_sdk::prelude::*;
 use serde_json::json;
 
 use crate::error::AppError;
-use crate::response::{NextAction, Response};
 
 fn keys_dir() -> PathBuf {
     dirs::home_dir()
@@ -81,102 +82,100 @@ fn keys_result(keys: &Keys) -> serde_json::Value {
 
 fn post_init_actions(pubkey_hex: &str) -> Vec<NextAction> {
     vec![
-        NextAction::simple("wokhei whoami", "Verify your identity"),
-        NextAction::simple(
+        NextAction::new("wokhei whoami", "Verify your identity"),
+        NextAction::new(
             "wokhei create-header --relay ws://localhost:7777 --name <name> --title <title>",
             "Create your first list header",
         ),
-        NextAction::simple(
-            &format!("wokhei list-headers --relay ws://localhost:7777 --author {pubkey_hex}"),
+        NextAction::new(
+            format!("wokhei list-headers --relay ws://localhost:7777 --author {pubkey_hex}"),
             "List your headers",
         ),
     ]
 }
 
-pub fn init(generate: bool, import: Option<String>) -> Response {
-    let cmd = "init";
+fn read_nsec_from_source(source: &str) -> Result<String, CommandError> {
+    let raw = if source == "-" {
+        let mut buf = String::new();
+        io::stdin().read_to_string(&mut buf).map_err(|e| {
+            CommandError::from(AppError::Io {
+                reason: e.to_string(),
+            })
+        })?;
+        buf
+    } else {
+        fs::read_to_string(source).map_err(|e| {
+            CommandError::from(AppError::Io {
+                reason: format!("Failed to read {source}: {e}"),
+            })
+        })?
+    };
+    Ok(raw.trim().to_string())
+}
 
+pub fn init(generate: bool, import: Option<&str>) -> Result<CommandOutput, CommandError> {
     if !generate && import.is_none() {
-        return Response::error(
-            cmd,
-            &AppError::Io {
-                reason: "Specify --generate or --import <nsec>".to_string(),
-            },
-            vec![
-                NextAction::simple("wokhei init --generate", "Generate a new keypair"),
-                NextAction::simple("wokhei init --import <nsec>", "Import an existing nsec key"),
-            ],
-        );
+        return Err(CommandError::new(
+            "Specify --generate or --import <source>",
+            "MISSING_ARG",
+            "Use --generate to create a new keypair, or --import - (stdin) / --import <file>",
+        )
+        .next_actions(vec![
+            NextAction::new("wokhei init --generate", "Generate a new keypair"),
+            NextAction::new("wokhei init --import -", "Import nsec from stdin"),
+        ]));
     }
 
     let path = keys_path();
     if path.exists() {
-        let err = AppError::KeysAlreadyExist {
+        return Err(CommandError::from(AppError::KeysAlreadyExist {
             path: path.display().to_string(),
-        };
-        return Response::error(
-            cmd,
-            &err,
-            vec![NextAction::simple(
-                "wokhei whoami",
-                "Check current identity",
-            )],
-        );
+        })
+        .next_actions(vec![NextAction::new(
+            "wokhei whoami",
+            "Check current identity",
+        )]));
     }
 
     let keys = if generate {
         Keys::generate()
-    } else if let Some(nsec) = import {
-        let Ok(k) = Keys::parse(&nsec) else {
-            return Response::error(
-                cmd,
-                &AppError::InvalidNsec,
-                vec![NextAction::simple(
-                    "wokhei init --generate",
-                    "Generate a new keypair instead",
-                )],
-            );
-        };
-        k
+    } else if let Some(source) = import {
+        let nsec = read_nsec_from_source(source)?;
+        Keys::parse(&nsec).map_err(|_| {
+            CommandError::from(AppError::InvalidNsec).next_actions(vec![NextAction::new(
+                "wokhei init --generate",
+                "Generate a new keypair instead",
+            )])
+        })?
     } else {
         unreachable!()
     };
 
-    if let Err(e) = save_keys(&keys) {
-        return Response::error(cmd, &e, vec![]);
-    }
+    save_keys(&keys).map_err(CommandError::from)?;
 
     let pubkey_hex = keys.public_key().to_hex();
     let actions = post_init_actions(&pubkey_hex);
-    Response::success(cmd, keys_result(&keys), actions)
+    Ok(CommandOutput::new(keys_result(&keys)).next_actions(actions))
 }
 
-pub fn whoami() -> Response {
-    let cmd = "whoami";
-    match load_keys() {
-        Ok(keys) => {
-            let pubkey_hex = keys.public_key().to_hex();
-            let actions = vec![
-                NextAction::simple(
-                    &format!(
-                        "wokhei list-headers --relay ws://localhost:7777 --author {pubkey_hex}"
-                    ),
-                    "List your headers",
-                ),
-                NextAction::simple(
-                    "wokhei create-header --relay ws://localhost:7777 --name <name> --title <title>",
-                    "Create a new list header",
-                ),
-            ];
-            Response::success(cmd, keys_result(&keys), actions)
-        }
-        Err(e) => Response::error(
-            cmd,
-            &e,
-            vec![NextAction::simple(
-                "wokhei init --generate",
-                "Generate a new keypair",
-            )],
+pub fn whoami() -> Result<CommandOutput, CommandError> {
+    let keys = load_keys().map_err(|e| {
+        CommandError::from(e).next_actions(vec![NextAction::new(
+            "wokhei init --generate",
+            "Generate a new keypair",
+        )])
+    })?;
+
+    let pubkey_hex = keys.public_key().to_hex();
+    let actions = vec![
+        NextAction::new(
+            format!("wokhei list-headers --relay ws://localhost:7777 --author {pubkey_hex}"),
+            "List your headers",
         ),
-    }
+        NextAction::new(
+            "wokhei create-header --relay ws://localhost:7777 --name <name> --title <title>",
+            "Create a new list header",
+        ),
+    ];
+    Ok(CommandOutput::new(keys_result(&keys)).next_actions(actions))
 }

@@ -2,8 +2,9 @@ use nostr_sdk::prelude::*;
 use serde_json::json;
 use std::time::Duration;
 
+use agcli::{CommandError, CommandOutput, NextAction};
+
 use crate::error::AppError;
-use crate::response::{NextAction, Response};
 
 fn event_to_json(event: &Event) -> serde_json::Value {
     let tags: Vec<Vec<String>> = event
@@ -72,32 +73,19 @@ pub async fn list_headers(
     author: Option<String>,
     tag: Option<String>,
     limit: usize,
-) -> Response {
-    let cmd = "list-headers";
-
-    let Ok(client) = connect_client(&relay).await else {
-        return Response::error(
-            cmd,
-            &AppError::RelayUnreachable { url: relay.clone() },
-            vec![],
-        );
-    };
+) -> Result<CommandOutput, CommandError> {
+    let client = connect_client(&relay).await.map_err(CommandError::from)?;
 
     let mut filter = Filter::new()
         .kinds(vec![Kind::Custom(9998), Kind::Custom(39998)])
         .limit(limit);
 
     if let Some(ref author_hex) = author {
-        let Ok(pk) = PublicKey::parse(author_hex) else {
-            client.disconnect().await;
-            return Response::error(
-                cmd,
-                &AppError::InvalidEventId {
-                    id: author_hex.clone(),
-                },
-                vec![],
-            );
-        };
+        let pk = PublicKey::parse(author_hex).map_err(|_| {
+            CommandError::from(AppError::InvalidEventId {
+                id: author_hex.clone(),
+            })
+        })?;
         filter = filter.author(pk);
     }
 
@@ -105,95 +93,86 @@ pub async fn list_headers(
         filter = filter.hashtag(t);
     }
 
-    let Ok(events) = client.fetch_events(filter, Duration::from_secs(10)).await else {
-        client.disconnect().await;
-        return Response::error(
-            cmd,
-            &AppError::RelayUnreachable { url: relay.clone() },
-            vec![],
-        );
+    let events = client
+        .fetch_events(filter, Duration::from_secs(10))
+        .await
+        .map_err(|_| CommandError::from(AppError::RelayUnreachable { url: relay.clone() }));
+
+    // Ensure disconnect on all paths after connect
+    let events = match events {
+        Ok(ev) => {
+            client.disconnect().await;
+            ev
+        }
+        Err(e) => {
+            client.disconnect().await;
+            return Err(e);
+        }
     };
 
     let headers: Vec<serde_json::Value> = events.iter().map(event_to_json).collect();
 
-    client.disconnect().await;
-
     if headers.is_empty() {
-        return Response::error(
-            cmd,
-            &AppError::NoResults,
-            vec![NextAction::simple(
-                &format!("wokhei create-header --relay {relay} --name <name> --title <title>"),
+        return Err(
+            CommandError::from(AppError::NoResults).next_actions(vec![NextAction::new(
+                format!("wokhei create-header --relay {relay} --name <name> --title <title>"),
                 "Create a new list header",
-            )],
+            )]),
         );
     }
 
     let first_id = headers[0]["event_id"].as_str().unwrap_or("").to_string();
     let actions = vec![
-        NextAction::simple(
-            &format!("wokhei list-items --relay {relay} {first_id}"),
+        NextAction::new(
+            format!("wokhei list-items --relay {relay} {first_id}"),
             "List items for the first header",
         ),
-        NextAction::simple(
-            &format!("wokhei create-header --relay {relay} --name <name> --title <title>"),
+        NextAction::new(
+            format!("wokhei create-header --relay {relay} --name <name> --title <title>"),
             "Create a new list header",
         ),
     ];
 
-    Response::success(
-        cmd,
-        json!({
-            "count": headers.len(),
-            "headers": headers
-        }),
-        actions,
-    )
+    Ok(CommandOutput::new(json!({
+        "count": headers.len(),
+        "headers": headers
+    }))
+    .next_actions(actions))
 }
 
-pub async fn list_items(relay: String, header_id: String, limit: usize) -> Response {
-    let cmd = "list-items";
+pub async fn list_items(
+    relay: String,
+    header_id: String,
+    limit: usize,
+) -> Result<CommandOutput, CommandError> {
+    let event_id = EventId::parse(&header_id).map_err(|_| {
+        CommandError::from(AppError::InvalidEventId {
+            id: header_id.clone(),
+        })
+    })?;
 
-    let Ok(event_id) = EventId::parse(&header_id) else {
-        return Response::error(
-            cmd,
-            &AppError::InvalidEventId {
-                id: header_id.clone(),
-            },
-            vec![],
-        );
-    };
-
-    let Ok(client) = connect_client(&relay).await else {
-        return Response::error(
-            cmd,
-            &AppError::RelayUnreachable { url: relay.clone() },
-            vec![],
-        );
-    };
+    let client = connect_client(&relay).await.map_err(CommandError::from)?;
 
     let all_items = fetch_all_items(&client, &relay, event_id, limit).await;
 
     client.disconnect().await;
 
     if all_items.is_empty() {
-        return Response::error(
-            cmd,
-            &AppError::NoResults,
-            vec![NextAction::simple(
-                &format!("wokhei add-item --relay {relay} --header {header_id} --resource <url>"),
+        return Err(
+            CommandError::from(AppError::NoResults).next_actions(vec![NextAction::new(
+                format!("wokhei add-item --relay {relay} --header {header_id} --resource <url>"),
                 "Add an item to this list",
-            )],
+            )]),
         );
     }
 
     let actions = vec![
-        NextAction::simple(
-            &format!("wokhei add-item --relay {relay} --header {header_id} --resource <url>"),
+        NextAction::new(
+            format!("wokhei add-item --relay {relay} --header {header_id} --resource <url>"),
             "Add another item to this list",
         ),
-        NextAction::simple(
-            &format!(
+        NextAction::new(
+            format!(
                 "wokhei inspect --relay {relay} {}",
                 all_items[0]["event_id"].as_str().unwrap_or("")
             ),
@@ -201,15 +180,12 @@ pub async fn list_items(relay: String, header_id: String, limit: usize) -> Respo
         ),
     ];
 
-    Response::success(
-        cmd,
-        json!({
-            "count": all_items.len(),
-            "header_id": header_id,
-            "items": all_items,
-        }),
-        actions,
-    )
+    Ok(CommandOutput::new(json!({
+        "count": all_items.len(),
+        "header_id": header_id,
+        "items": all_items,
+    }))
+    .next_actions(actions))
 }
 
 async fn fetch_all_items(
@@ -293,51 +269,41 @@ async fn fetch_coordinate_items(
     }
 }
 
-pub async fn inspect(relay: String, event_id_str: String) -> Response {
-    let cmd = "inspect";
+pub async fn inspect(relay: String, event_id_str: String) -> Result<CommandOutput, CommandError> {
+    let event_id = EventId::parse(&event_id_str).map_err(|_| {
+        CommandError::from(AppError::InvalidEventId {
+            id: event_id_str.clone(),
+        })
+    })?;
 
-    let Ok(event_id) = EventId::parse(&event_id_str) else {
-        return Response::error(
-            cmd,
-            &AppError::InvalidEventId {
-                id: event_id_str.clone(),
-            },
-            vec![],
-        );
-    };
-
-    let Ok(client) = connect_client(&relay).await else {
-        return Response::error(
-            cmd,
-            &AppError::RelayUnreachable { url: relay.clone() },
-            vec![],
-        );
-    };
+    let client = connect_client(&relay).await.map_err(CommandError::from)?;
 
     let filter = Filter::new().id(event_id).limit(1);
-    let Ok(events) = client.fetch_events(filter, Duration::from_secs(10)).await else {
-        client.disconnect().await;
-        return Response::error(
-            cmd,
-            &AppError::RelayUnreachable { url: relay.clone() },
-            vec![],
-        );
+    let events = client
+        .fetch_events(filter, Duration::from_secs(10))
+        .await
+        .map_err(|_| CommandError::from(AppError::RelayUnreachable { url: relay.clone() }));
+
+    let events = match events {
+        Ok(ev) => {
+            client.disconnect().await;
+            ev
+        }
+        Err(e) => {
+            client.disconnect().await;
+            return Err(e);
+        }
     };
 
-    client.disconnect().await;
-
-    let Some(event) = events.into_iter().next() else {
-        return Response::error(
-            cmd,
-            &AppError::HeaderNotFound {
-                event_id: event_id_str,
-            },
-            vec![NextAction::simple(
-                &format!("wokhei list-headers --relay {relay}"),
-                "List available headers",
-            )],
-        );
-    };
+    let event = events.into_iter().next().ok_or_else(|| {
+        CommandError::from(AppError::HeaderNotFound {
+            event_id: event_id_str.clone(),
+        })
+        .next_actions(vec![NextAction::new(
+            format!("wokhei list-headers --relay {relay}"),
+            "List available headers",
+        )])
+    })?;
 
     let ev_json = event_to_json(&event);
     let kind = event.kind.as_u16();
@@ -346,20 +312,20 @@ pub async fn inspect(relay: String, event_id_str: String) -> Response {
 
     // Context-sensitive next actions
     if kind == 9998 || kind == 39998 {
-        actions.push(NextAction::simple(
-            &format!("wokhei list-items --relay {relay} {event_id_str}"),
+        actions.push(NextAction::new(
+            format!("wokhei list-items --relay {relay} {event_id_str}"),
             "List items in this list",
         ));
-        actions.push(NextAction::simple(
-            &format!("wokhei add-item --relay {relay} --header {event_id_str} --resource <url>"),
+        actions.push(NextAction::new(
+            format!("wokhei add-item --relay {relay} --header {event_id_str} --resource <url>"),
             "Add an item to this list",
         ));
     }
 
-    actions.push(NextAction::simple(
-        &format!("wokhei delete --relay {relay} {event_id_str}"),
+    actions.push(NextAction::new(
+        format!("wokhei delete --relay {relay} {event_id_str}"),
         "Delete this event (NIP-09 request)",
     ));
 
-    Response::success(cmd, ev_json, actions)
+    Ok(CommandOutput::new(ev_json).next_actions(actions))
 }

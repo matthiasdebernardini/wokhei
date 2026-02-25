@@ -2,9 +2,10 @@ use nostr_sdk::prelude::*;
 use serde_json::json;
 use std::time::Duration;
 
+use agcli::{CommandError, CommandOutput, NextAction};
+
 use crate::error::AppError;
 use crate::keys::load_keys;
-use crate::response::{NextAction, Response};
 
 fn parse_coordinate_str(input: &str) -> Result<(u16, PublicKey, String), AppError> {
     let parts: Vec<&str> = input.splitn(3, ':').collect();
@@ -41,21 +42,13 @@ async fn resolve_header_ref(
     resource: &str,
     header: Option<&str>,
     header_coordinate: Option<&str>,
-) -> Result<(Tag, String), Response> {
-    let cmd = "add-item";
-
+) -> Result<(Tag, String), CommandError> {
     if let Some(coord_str) = header_coordinate {
-        match parse_coordinate_str(coord_str) {
-            Ok((kind_num, pubkey, d_val)) => {
-                let coord = Coordinate::new(Kind::Custom(kind_num), pubkey).identifier(&d_val);
-                let tag = Tag::coordinate(coord, None);
-                Ok((tag, coord_str.to_string()))
-            }
-            Err(e) => {
-                client.disconnect().await;
-                Err(Response::error(cmd, &e, vec![]))
-            }
-        }
+        let (kind_num, pubkey, d_val) =
+            parse_coordinate_str(coord_str).map_err(CommandError::from)?;
+        let coord = Coordinate::new(Kind::Custom(kind_num), pubkey).identifier(&d_val);
+        let tag = Tag::coordinate(coord, None);
+        Ok((tag, coord_str.to_string()))
     } else if let Some(header_id_str) = header {
         resolve_header_by_id(client, relay, resource, header_id_str).await
     } else {
@@ -68,47 +61,34 @@ async fn resolve_header_by_id(
     relay: &str,
     resource: &str,
     header_id_str: &str,
-) -> Result<(Tag, String), Response> {
-    let cmd = "add-item";
-
-    let Ok(event_id) = EventId::parse(header_id_str) else {
-        client.disconnect().await;
-        return Err(Response::error(
-            cmd,
-            &AppError::InvalidEventId {
-                id: header_id_str.to_string(),
-            },
-            vec![],
-        ));
-    };
+) -> Result<(Tag, String), CommandError> {
+    let event_id = EventId::parse(header_id_str).map_err(|_| {
+        CommandError::from(AppError::InvalidEventId {
+            id: header_id_str.to_string(),
+        })
+    })?;
 
     let filter = Filter::new().id(event_id).limit(1);
-    let Ok(events) = client.fetch_events(filter, Duration::from_secs(10)).await else {
-        client.disconnect().await;
-        return Err(Response::error(
-            cmd,
-            &AppError::RelayUnreachable {
+    let events = client
+        .fetch_events(filter, Duration::from_secs(10))
+        .await
+        .map_err(|_| {
+            CommandError::from(AppError::RelayUnreachable {
                 url: relay.to_string(),
-            },
-            vec![],
-        ));
-    };
+            })
+        })?;
 
-    let Some(header_event) = events.into_iter().next() else {
-        client.disconnect().await;
-        return Err(Response::error(
-            cmd,
-            &AppError::HeaderNotFound {
-                event_id: header_id_str.to_string(),
-            },
-            vec![NextAction::simple(
-                &format!(
-                    "wokhei add-item --relay {relay} --header-coordinate <kind:pubkey:d-tag> --resource \"{resource}\""
-                ),
-                "Use coordinate reference instead (cross-relay)",
-            )],
-        ));
-    };
+    let header_event = events.into_iter().next().ok_or_else(|| {
+        CommandError::from(AppError::HeaderNotFound {
+            event_id: header_id_str.to_string(),
+        })
+        .next_actions(vec![NextAction::new(
+            format!(
+                "wokhei add-item --relay {relay} --header-coordinate <kind:pubkey:d-tag> --resource \"{resource}\""
+            ),
+            "Use coordinate reference instead (cross-relay)",
+        )])
+    })?;
 
     if header_event.kind == Kind::Custom(39998) {
         let d_val = header_event.tags.iter().find_map(|t| {
@@ -120,10 +100,7 @@ async fn resolve_header_by_id(
             }
         });
 
-        let Some(d) = d_val else {
-            client.disconnect().await;
-            return Err(Response::error(cmd, &AppError::HeaderMissingDTag, vec![]));
-        };
+        let d = d_val.ok_or_else(|| CommandError::from(AppError::HeaderMissingDTag))?;
 
         let coord = Coordinate::new(Kind::Custom(39998), header_event.pubkey).identifier(&d);
         let ref_str = format!("39998:{}:{}", header_event.pubkey.to_hex(), d);
@@ -158,50 +135,33 @@ fn build_item_tags(
     event_tags
 }
 
-#[allow(clippy::result_large_err)]
-fn validate_item_params(params: &ItemParams) -> Result<(), Response> {
-    let cmd = "add-item";
+fn validate_item_params(params: &ItemParams) -> Result<(), CommandError> {
     if params.header.is_none() && params.header_coordinate.is_none() {
-        return Err(Response::error(
-            cmd,
-            &AppError::Io {
-                reason: "Specify --header <event-id> or --header-coordinate <kind:pubkey:d-tag>"
-                    .to_string(),
-            },
-            vec![],
+        return Err(CommandError::new(
+            "Specify --header <event-id> or --header-coordinate <kind:pubkey:d-tag>",
+            "MISSING_ARG",
+            "Use --header with an event ID, or --header-coordinate with kind:pubkey:d-tag",
         ));
     }
     if params.addressable && params.d_tag.is_none() {
-        return Err(Response::error(
-            cmd,
-            &AppError::Io {
-                reason: "--addressable requires --d-tag <identifier>".to_string(),
-            },
-            vec![],
+        return Err(CommandError::new(
+            "--addressable requires --d-tag <identifier>",
+            "MISSING_ARG",
+            "Add --d-tag <identifier> when using --addressable",
         ));
     }
     Ok(())
 }
 
-pub async fn add_item(params: ItemParams) -> Response {
-    let cmd = "add-item";
+pub async fn add_item(params: ItemParams) -> Result<CommandOutput, CommandError> {
+    let keys = load_keys().map_err(|e| {
+        CommandError::from(e).next_actions(vec![NextAction::new(
+            "wokhei init --generate",
+            "Generate a keypair first",
+        )])
+    })?;
 
-    let Ok(keys) = load_keys() else {
-        return Response::error(
-            cmd,
-            &AppError::KeysNotFound {
-                path: "~/.wokhei/keys".to_string(),
-            },
-            vec![NextAction::simple(
-                "wokhei init --generate",
-                "Generate a keypair first",
-            )],
-        );
-    };
-
-    if let Err(resp) = validate_item_params(&params) {
-        return resp;
-    }
+    validate_item_params(&params)?;
 
     let ItemParams {
         relay,
@@ -223,71 +183,65 @@ pub async fn add_item(params: ItemParams) -> Response {
 
     let client = Client::builder().signer(keys.clone()).build();
     if client.add_relay(&relay).await.is_err() {
-        return Response::error(
-            cmd,
-            &AppError::RelayUnreachable { url: relay.clone() },
-            vec![],
-        );
+        return Err(CommandError::from(AppError::RelayUnreachable {
+            url: relay.clone(),
+        }));
     }
     client.connect().await;
 
-    let (header_ref_tag, header_ref_str) = match resolve_header_ref(
-        &client,
-        &relay,
-        &resource,
-        header.as_deref(),
-        header_coordinate.as_deref(),
-    )
-    .await
-    {
-        Ok(r) => r,
-        Err(resp) => return resp,
-    };
+    let result = async {
+        let (header_ref_tag, header_ref_str) = resolve_header_ref(
+            &client,
+            &relay,
+            &resource,
+            header.as_deref(),
+            header_coordinate.as_deref(),
+        )
+        .await?;
 
-    let event_tags = build_item_tags(header_ref_tag, &resource, &z_tag, &fields, d_tag.as_deref());
-    let builder = EventBuilder::new(item_kind, content.as_deref().unwrap_or("")).tags(event_tags);
+        let event_tags =
+            build_item_tags(header_ref_tag, &resource, &z_tag, &fields, d_tag.as_deref());
+        let builder =
+            EventBuilder::new(item_kind, content.as_deref().unwrap_or("")).tags(event_tags);
 
-    match client.send_event_builder(builder).await {
-        Ok(output) => {
-            let event_id = output.val.to_hex();
-            let result = json!({
-                "event_id": event_id, "kind": item_kind.as_u16(),
-                "header_ref": header_ref_str, "resource": resource,
-            });
-            let header_flag = if header_coordinate.is_some() {
-                format!("--header-coordinate \"{header_ref_str}\"")
-            } else {
-                format!("--header {}", header.as_deref().unwrap_or(""))
-            };
-            let actions = vec![
-                NextAction::simple(
-                    &format!("wokhei inspect --relay {relay} {event_id}"),
-                    "Inspect the created item",
-                ),
-                NextAction::simple(
-                    &format!("wokhei add-item --relay {relay} {header_flag} --resource <url>"),
-                    "Add another item to this list",
-                ),
-                NextAction::simple(
-                    &format!(
-                        "wokhei list-items --relay {relay} {}",
-                        header.as_deref().unwrap_or(&header_ref_str)
+        match client.send_event_builder(builder).await {
+            Ok(output) => {
+                let event_id = output.val.to_hex();
+                let result = json!({
+                    "event_id": event_id, "kind": item_kind.as_u16(),
+                    "header_ref": header_ref_str, "resource": resource,
+                });
+                let header_flag = if header_coordinate.is_some() {
+                    format!("--header-coordinate \"{header_ref_str}\"")
+                } else {
+                    format!("--header {}", header.as_deref().unwrap_or(""))
+                };
+                let actions = vec![
+                    NextAction::new(
+                        format!("wokhei inspect --relay {relay} {event_id}"),
+                        "Inspect the created item",
                     ),
-                    "List all items in this list",
-                ),
-            ];
-            client.disconnect().await;
-            Response::success(cmd, result, actions)
-        }
-        Err(e) => {
-            client.disconnect().await;
-            Response::error(
-                cmd,
-                &AppError::RelayRejected {
-                    reason: e.to_string(),
-                },
-                vec![],
-            )
+                    NextAction::new(
+                        format!("wokhei add-item --relay {relay} {header_flag} --resource <url>"),
+                        "Add another item to this list",
+                    ),
+                    NextAction::new(
+                        format!(
+                            "wokhei list-items --relay {relay} {}",
+                            header.as_deref().unwrap_or(&header_ref_str)
+                        ),
+                        "List all items in this list",
+                    ),
+                ];
+                Ok(CommandOutput::new(result).next_actions(actions))
+            }
+            Err(e) => Err(CommandError::from(AppError::RelayRejected {
+                reason: e.to_string(),
+            })),
         }
     }
+    .await;
+
+    client.disconnect().await;
+    result
 }

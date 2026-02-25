@@ -1,42 +1,34 @@
 use nostr_sdk::prelude::*;
 use serde_json::json;
 
+use agcli::{CommandError, CommandOutput, NextAction};
+
 use crate::error::AppError;
 use crate::keys::load_keys;
-use crate::response::{NextAction, Response};
 
-pub async fn delete(relay: String, event_id_strs: Vec<String>) -> Response {
-    let cmd = "delete";
-
-    let Ok(keys) = load_keys() else {
-        return Response::error(
-            cmd,
-            &AppError::KeysNotFound {
-                path: "~/.wokhei/keys".to_string(),
-            },
-            vec![NextAction::simple(
-                "wokhei init --generate",
-                "Generate a keypair first",
-            )],
-        );
-    };
+pub async fn delete(
+    relay: String,
+    event_id_strs: Vec<String>,
+) -> Result<CommandOutput, CommandError> {
+    let keys = load_keys().map_err(|e| {
+        CommandError::from(e).next_actions(vec![NextAction::new(
+            "wokhei init --generate",
+            "Generate a keypair first",
+        )])
+    })?;
 
     let mut event_ids = Vec::new();
     for id_str in &event_id_strs {
-        let Ok(id) = EventId::parse(id_str) else {
-            return Response::error(
-                cmd,
-                &AppError::InvalidEventId { id: id_str.clone() },
-                vec![],
-            );
-        };
+        let id = EventId::parse(id_str)
+            .map_err(|_| CommandError::from(AppError::InvalidEventId { id: id_str.clone() }))?;
         event_ids.push(id);
     }
 
     let client = Client::builder().signer(keys).build();
     if client.add_relay(&relay).await.is_err() {
-        let err = AppError::RelayUnreachable { url: relay.clone() };
-        return Response::error(cmd, &err, vec![]);
+        return Err(CommandError::from(AppError::RelayUnreachable {
+            url: relay.clone(),
+        }));
     }
     client.connect().await;
 
@@ -46,7 +38,7 @@ pub async fn delete(relay: String, event_id_strs: Vec<String>) -> Response {
     }
     let builder = EventBuilder::delete(request);
 
-    match client.send_event_builder(builder).await {
+    let result = match client.send_event_builder(builder).await {
         Ok(output) => {
             let deletion_id = output.val.to_hex();
 
@@ -56,20 +48,18 @@ pub async fn delete(relay: String, event_id_strs: Vec<String>) -> Response {
                 "note": "NIP-09: deletion is a REQUEST — relays may or may not honor it"
             });
 
-            let actions = vec![NextAction::simple(
-                &format!("wokhei list-headers --relay {relay}"),
+            let actions = vec![NextAction::new(
+                format!("wokhei list-headers --relay {relay}"),
                 "List headers to verify deletion",
             )];
 
-            client.disconnect().await;
-            Response::success(cmd, result, actions)
+            Ok(CommandOutput::new(result).next_actions(actions))
         }
-        Err(e) => {
-            client.disconnect().await;
-            let err = AppError::RelayRejected {
-                reason: e.to_string(),
-            };
-            Response::error(cmd, &err, vec![])
-        }
-    }
+        Err(e) => Err(CommandError::from(AppError::RelayRejected {
+            reason: e.to_string(),
+        })),
+    };
+
+    client.disconnect().await;
+    result
 }

@@ -1,3 +1,4 @@
+use agcli::CommandError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -104,5 +105,11 @@ impl AppError {
                 "Provide valid JSON input".to_string()
             }
         }
+    }
+}
+
+impl From<AppError> for CommandError {
+    fn from(err: AppError) -> Self {
+        CommandError::new(err.to_string(), err.code(), err.fix())
     }
 }
