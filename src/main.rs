@@ -554,9 +554,12 @@ mod tests {
         j["result"]["v"].as_str().unwrap().to_string()
     }
 
+    // SAFETY: These env-var tests run in separate processes via nextest,
+    // so there is no concurrent thread that could observe a partial write.
+
     #[test]
     fn resolve_relay_default_fallback() {
-        std::env::remove_var("WOKHEI_RELAY");
+        unsafe { std::env::remove_var("WOKHEI_RELAY") };
         let exec = relay_cli().run_argv(["test", "c"]);
         assert!(exec.envelope().ok());
         assert_eq!(relay_result(&exec), "ws://localhost:7777");
@@ -564,7 +567,7 @@ mod tests {
 
     #[test]
     fn resolve_relay_flag_override() {
-        std::env::remove_var("WOKHEI_RELAY");
+        unsafe { std::env::remove_var("WOKHEI_RELAY") };
         let exec = relay_cli().run_argv(["test", "c", "--relay=ws://custom:1234"]);
         assert!(exec.envelope().ok());
         assert_eq!(relay_result(&exec), "ws://custom:1234");
@@ -572,17 +575,17 @@ mod tests {
 
     #[test]
     fn resolve_relay_env_var() {
-        std::env::set_var("WOKHEI_RELAY", "ws://envrelay:5555");
+        unsafe { std::env::set_var("WOKHEI_RELAY", "ws://envrelay:5555") };
         let exec = relay_cli().run_argv(["test", "c"]);
         assert_eq!(relay_result(&exec), "ws://envrelay:5555");
-        std::env::remove_var("WOKHEI_RELAY");
+        unsafe { std::env::remove_var("WOKHEI_RELAY") };
     }
 
     #[test]
     fn resolve_relay_flag_beats_env() {
-        std::env::set_var("WOKHEI_RELAY", "ws://envrelay:5555");
+        unsafe { std::env::set_var("WOKHEI_RELAY", "ws://envrelay:5555") };
         let exec = relay_cli().run_argv(["test", "c", "--relay=ws://flagrelay:9999"]);
         assert_eq!(relay_result(&exec), "ws://flagrelay:9999");
-        std::env::remove_var("WOKHEI_RELAY");
+        unsafe { std::env::remove_var("WOKHEI_RELAY") };
     }
 }

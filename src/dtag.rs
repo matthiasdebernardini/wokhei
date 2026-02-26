@@ -1,4 +1,4 @@
-use nostr_sdk::hashes::{sha256, Hash};
+use nostr_sdk::hashes::{Hash, sha256};
 
 /// Compute a deterministic 8-hex-char suffix from a preimage string.
 fn suffix(preimage: &str) -> String {

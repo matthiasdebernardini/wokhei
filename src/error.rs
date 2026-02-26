@@ -229,10 +229,12 @@ mod tests {
     fn non_relay_errors_are_not_retryable() {
         assert!(!AppError::KeysNotFound { path: "/x".into() }.retryable());
         assert!(!AppError::RelayRejected { reason: "x".into() }.retryable());
-        assert!(!AppError::HeaderNotFound {
-            event_id: "x".into()
-        }
-        .retryable());
+        assert!(
+            !AppError::HeaderNotFound {
+                event_id: "x".into()
+            }
+            .retryable()
+        );
         assert!(!AppError::HeaderMissingDTag.retryable());
         assert!(!AppError::InvalidEventId { id: "x".into() }.retryable());
         assert!(!AppError::NoResults.retryable());
