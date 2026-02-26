@@ -31,7 +31,6 @@ pub struct ItemParams {
     pub resource: String,
     pub content: Option<String>,
     pub fields: Vec<String>,
-    pub z_tag: String,
     pub addressable: bool,
     pub d_tag: Option<String>,
 }
@@ -42,13 +41,16 @@ async fn resolve_header_ref(
     resource: &str,
     header: Option<&str>,
     header_coordinate: Option<&str>,
-) -> Result<(Tag, String), CommandError> {
+) -> Result<String, CommandError> {
     if let Some(coord_str) = header_coordinate {
         let (kind_num, pubkey, d_val) =
             parse_coordinate_str(coord_str).map_err(CommandError::from)?;
-        let coord = Coordinate::new(Kind::Custom(kind_num), pubkey).identifier(&d_val);
-        let tag = Tag::coordinate(coord, None);
-        Ok((tag, coord_str.to_string()))
+        if kind_num != 39998 {
+            return Err(CommandError::from(AppError::InvalidCoordinate {
+                input: coord_str.to_string(),
+            }));
+        }
+        Ok(format!("39998:{}:{d_val}", pubkey.to_hex()))
     } else if let Some(header_id_str) = header {
         resolve_header_by_id(client, relay, resource, header_id_str).await
     } else {
@@ -61,7 +63,7 @@ async fn resolve_header_by_id(
     relay: &str,
     resource: &str,
     header_id_str: &str,
-) -> Result<(Tag, String), CommandError> {
+) -> Result<String, CommandError> {
     let event_id = EventId::parse(header_id_str).map_err(|_| {
         CommandError::from(AppError::InvalidEventId {
             id: header_id_str.to_string(),
@@ -101,25 +103,27 @@ async fn resolve_header_by_id(
         });
 
         let d = d_val.ok_or_else(|| CommandError::from(AppError::HeaderMissingDTag))?;
-
-        let coord = Coordinate::new(Kind::Custom(39998), header_event.pubkey).identifier(&d);
-        let ref_str = format!("39998:{}:{}", header_event.pubkey.to_hex(), d);
-        Ok((Tag::coordinate(coord, None), ref_str))
+        Ok(format!("39998:{}:{d}", header_event.pubkey.to_hex()))
+    } else if header_event.kind == Kind::Custom(9998) {
+        Ok(event_id.to_hex())
     } else {
-        Ok((Tag::event(event_id), header_id_str.to_string()))
+        Err(CommandError::new(
+            "--header must reference a list header event (kind 9998 or 39998)",
+            "INVALID_ARGS",
+            "Provide a header event ID, or use --header-coordinate=<39998:pubkey:d-tag>",
+        ))
     }
 }
 
 fn build_item_tags(
-    header_ref_tag: Tag,
+    parent_z_ref: &str,
     resource: &str,
-    z_tag: &str,
     fields: &[String],
     d_tag: Option<&str>,
 ) -> Vec<Tag> {
-    let mut event_tags: Vec<Tag> = vec![header_ref_tag];
+    let mut event_tags: Vec<Tag> = Vec::new();
+    event_tags.push(Tag::custom(TagKind::custom("z"), [parent_z_ref]));
     event_tags.push(Tag::custom(TagKind::custom("r"), [resource]));
-    event_tags.push(Tag::custom(TagKind::custom("z"), [z_tag]));
     event_tags.push(Tag::custom(TagKind::custom("client"), ["wokhei"]));
 
     for field in fields {
@@ -170,7 +174,6 @@ pub async fn add_item(params: ItemParams) -> Result<CommandOutput, CommandError>
         resource,
         content,
         fields,
-        z_tag,
         addressable,
         d_tag,
     } = params;
@@ -190,7 +193,7 @@ pub async fn add_item(params: ItemParams) -> Result<CommandOutput, CommandError>
     client.connect().await;
 
     let result = async {
-        let (header_ref_tag, header_ref_str) = resolve_header_ref(
+        let parent_z_ref = resolve_header_ref(
             &client,
             &relay,
             &resource,
@@ -199,8 +202,7 @@ pub async fn add_item(params: ItemParams) -> Result<CommandOutput, CommandError>
         )
         .await?;
 
-        let event_tags =
-            build_item_tags(header_ref_tag, &resource, &z_tag, &fields, d_tag.as_deref());
+        let event_tags = build_item_tags(&parent_z_ref, &resource, &fields, d_tag.as_deref());
         let builder =
             EventBuilder::new(item_kind, content.as_deref().unwrap_or("")).tags(event_tags);
 
@@ -209,12 +211,24 @@ pub async fn add_item(params: ItemParams) -> Result<CommandOutput, CommandError>
                 let event_id = output.val.to_hex();
                 let result = json!({
                     "event_id": event_id, "kind": item_kind.as_u16(),
-                    "header_ref": header_ref_str, "resource": resource,
+                    "header_ref": parent_z_ref, "resource": resource,
                 });
-                let header_flag = if header_coordinate.is_some() {
-                    format!("--header-coordinate=\"{header_ref_str}\"")
+                let coordinate_mode =
+                    header_coordinate.is_some() || parent_z_ref.starts_with("39998:");
+                let header_flag = if coordinate_mode {
+                    format!("--header-coordinate=\"{parent_z_ref}\"")
                 } else {
-                    format!("--header={}", header.as_deref().unwrap_or(""))
+                    format!("--header={}", header.as_deref().unwrap_or(&parent_z_ref))
+                };
+                let list_items_cmd = if coordinate_mode {
+                    format!(
+                        "wokhei list-items --relay={relay} --header-coordinate=\"{parent_z_ref}\""
+                    )
+                } else {
+                    format!(
+                        "wokhei list-items --relay={relay} {}",
+                        header.as_deref().unwrap_or(&parent_z_ref)
+                    )
                 };
                 let actions = vec![
                     NextAction::new(
@@ -225,13 +239,7 @@ pub async fn add_item(params: ItemParams) -> Result<CommandOutput, CommandError>
                         format!("wokhei add-item --relay={relay} {header_flag} --resource=<url>"),
                         "Add another item to this list",
                     ),
-                    NextAction::new(
-                        format!(
-                            "wokhei list-items --relay={relay} {}",
-                            header.as_deref().unwrap_or(&header_ref_str)
-                        ),
-                        "List all items in this list",
-                    ),
+                    NextAction::new(list_items_cmd, "List all items in this list"),
                 ];
                 Ok(CommandOutput::new(result).next_actions(actions))
             }
@@ -322,7 +330,6 @@ mod tests {
             resource: "https://example.com".into(),
             content: None,
             fields: vec![],
-            z_tag: "listItem".into(),
             addressable: false,
             d_tag: None,
         }
@@ -373,10 +380,6 @@ mod tests {
     // build_item_tags
     // -----------------------------------------------------------------------
 
-    fn dummy_header_tag() -> Tag {
-        Tag::custom(TagKind::custom("e"), ["abc123"])
-    }
-
     fn find_tag<'a>(tags: &'a [Tag], kind_str: &str) -> Option<&'a Tag> {
         tags.iter()
             .find(|t| t.as_slice().first().map(String::as_str) == Some(kind_str))
@@ -387,67 +390,45 @@ mod tests {
     }
 
     #[test]
-    fn build_item_tags_has_header_ref() {
-        let tags = build_item_tags(
-            dummy_header_tag(),
-            "https://example.com",
-            "listItem",
-            &[],
-            None,
-        );
-        let e = find_tag(&tags, "e").expect("header ref tag missing");
-        assert!(tag_values(e).contains(&"abc123".to_string()));
+    fn build_item_tags_has_parent_z_ref() {
+        let tags = build_item_tags("abc123", "https://example.com", &[], None);
+        let z = find_tag(&tags, "z").expect("z tag missing");
+        assert_eq!(tag_values(z), vec!["z", "abc123"]);
     }
 
     #[test]
     fn build_item_tags_has_resource() {
-        let tags = build_item_tags(
-            dummy_header_tag(),
-            "https://example.com",
-            "listItem",
-            &[],
-            None,
-        );
+        let tags = build_item_tags("abc123", "https://example.com", &[], None);
         let r = find_tag(&tags, "r").expect("r tag missing");
         assert_eq!(tag_values(r), vec!["r", "https://example.com"]);
     }
 
     #[test]
-    fn build_item_tags_has_z_tag() {
-        let tags = build_item_tags(
-            dummy_header_tag(),
-            "https://example.com",
-            "listItem",
-            &[],
-            None,
-        );
-        let z = find_tag(&tags, "z").expect("z tag missing");
-        assert_eq!(tag_values(z), vec!["z", "listItem"]);
-    }
-
-    #[test]
     fn build_item_tags_has_client() {
-        let tags = build_item_tags(
-            dummy_header_tag(),
-            "https://example.com",
-            "listItem",
-            &[],
-            None,
-        );
+        let tags = build_item_tags("abc123", "https://example.com", &[], None);
         let c = find_tag(&tags, "client").expect("client tag missing");
         assert_eq!(tag_values(c), vec!["client", "wokhei"]);
     }
 
     #[test]
+    fn build_item_tags_does_not_emit_legacy_parent_tags() {
+        let tags = build_item_tags("abc123", "https://example.com", &[], None);
+        assert!(find_tag(&tags, "e").is_none());
+        assert!(find_tag(&tags, "a").is_none());
+    }
+
+    #[test]
+    fn build_item_tags_accepts_coordinate_parent_ref() {
+        let coord = format!("39998:{}:my-list", test_pubkey_hex());
+        let tags = build_item_tags(&coord, "https://example.com", &[], None);
+        let z = find_tag(&tags, "z").expect("z tag missing");
+        assert_eq!(tag_values(z), vec!["z".to_string(), coord]);
+    }
+
+    #[test]
     fn build_item_tags_fields_with_equals_become_tags() {
         let fields = vec!["color=red".to_string(), "size=large".to_string()];
-        let tags = build_item_tags(
-            dummy_header_tag(),
-            "https://example.com",
-            "listItem",
-            &fields,
-            None,
-        );
+        let tags = build_item_tags("abc123", "https://example.com", &fields, None);
         let color = find_tag(&tags, "color").expect("color tag missing");
         assert_eq!(tag_values(color), vec!["color", "red"]);
         let size = find_tag(&tags, "size").expect("size tag missing");
@@ -457,39 +438,21 @@ mod tests {
     #[test]
     fn build_item_tags_fields_without_equals_skipped() {
         let fields = vec!["no-equals-here".to_string()];
-        let tags = build_item_tags(
-            dummy_header_tag(),
-            "https://example.com",
-            "listItem",
-            &fields,
-            None,
-        );
-        // Should only have header_ref, r, z, client — no extra tag
-        assert_eq!(tags.len(), 4);
+        let tags = build_item_tags("abc123", "https://example.com", &fields, None);
+        // Should only have z, r, client — no extra tag
+        assert_eq!(tags.len(), 3);
     }
 
     #[test]
     fn build_item_tags_d_tag_present() {
-        let tags = build_item_tags(
-            dummy_header_tag(),
-            "https://example.com",
-            "listItem",
-            &[],
-            Some("my-item"),
-        );
+        let tags = build_item_tags("abc123", "https://example.com", &[], Some("my-item"));
         let d = find_tag(&tags, "d").expect("d tag missing");
         assert_eq!(tag_values(d), vec!["d", "my-item"]);
     }
 
     #[test]
     fn build_item_tags_d_tag_absent() {
-        let tags = build_item_tags(
-            dummy_header_tag(),
-            "https://example.com",
-            "listItem",
-            &[],
-            None,
-        );
+        let tags = build_item_tags("abc123", "https://example.com", &[], None);
         assert!(find_tag(&tags, "d").is_none());
     }
 }

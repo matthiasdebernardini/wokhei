@@ -21,7 +21,7 @@ echo "nsec1..." | wokhei init --import=-
 echo "nsec1..." | wokhei init --import -
 
 # Create a list header
-wokhei create-header --name=playlist --title="Jazz Favorites" --tags=jazz,music
+wokhei create-header --name=playlist --plural=playlists --titles="Playlist,Playlists" --tags=jazz,music
 
 # Add an item
 wokhei add-item --header=<event-id> --resource="https://example.com/song"

@@ -35,14 +35,18 @@ fn event_to_json(event: &Event) -> serde_json::Value {
             let key = parts[0].as_str();
             match key {
                 "names" => {
-                    let names: Vec<&str> = parts[1..].iter().map(String::as_str).collect();
-                    obj["name"] = json!(names.first().unwrap_or(&""));
-                    if names.len() > 1 {
-                        obj["aliases"] = json!(&names[1..]);
+                    obj["name"] = json!(parts[1].as_str());
+                    if parts.len() >= 3 {
+                        obj["plural_name"] = json!(parts[2].as_str());
+                        obj["names"] = json!([parts[1].as_str(), parts[2].as_str()]);
                     }
                 }
-                "title" => {
+                "titles" => {
                     obj["title"] = json!(parts[1].as_str());
+                    if parts.len() >= 3 {
+                        obj["plural_title"] = json!(parts[2].as_str());
+                        obj["titles"] = json!([parts[1].as_str(), parts[2].as_str()]);
+                    }
                 }
                 "description" => {
                     obj["description"] = json!(parts[1].as_str());
@@ -274,7 +278,9 @@ pub async fn list_headers(
         if total == 0 && offset == 0 {
             return Err(CommandError::from(AppError::NoResults).next_actions(vec![
                 NextAction::new(
-                    format!("wokhei create-header --relay={relay} --name=<name> --title=<title>"),
+                    format!(
+                        "wokhei create-header --relay={relay} --name=<singular> --plural=<plural>"
+                    ),
                     "Create a new list header",
                 ),
             ]));
@@ -343,7 +349,7 @@ pub async fn list_headers(
         }
 
         actions.push(NextAction::new(
-            format!("wokhei create-header --relay={relay} --name=<name> --title=<title>"),
+            format!("wokhei create-header --relay={relay} --name=<singular> --plural=<plural>"),
             "Create a new list header",
         ));
 
@@ -371,8 +377,10 @@ pub async fn list_items(
 ) -> Result<CommandOutput, CommandError> {
     let client = connect_client(&relay).await.map_err(CommandError::from)?;
 
-    let all_items = if let Some(ref coord_str) = header_coordinate {
-        fetch_items_by_coordinate(&client, &relay, coord_str, limit).await?
+    let (all_items, header_ref, coordinate_mode) = if let Some(ref coord_str) = header_coordinate {
+        let normalized_ref = normalize_coordinate_ref(coord_str)?;
+        let items = fetch_items_by_z(&client, &normalized_ref, limit).await;
+        (items, normalized_ref, true)
     } else {
         let id_str = header_id.as_deref().unwrap_or("");
         let event_id = EventId::parse(id_str).map_err(|_| {
@@ -380,17 +388,15 @@ pub async fn list_items(
                 id: id_str.to_string(),
             })
         })?;
-        fetch_all_items(&client, &relay, event_id, limit).await
+        let header_event = fetch_header_event_by_id(&client, &relay, event_id).await?;
+        let (resolved_ref, resolved_coordinate_mode) = z_ref_for_header_event(&header_event)?;
+        let items = fetch_items_by_z(&client, &resolved_ref, limit).await;
+        (items, resolved_ref, resolved_coordinate_mode)
     };
 
     client.disconnect().await;
 
-    let header_ref = header_coordinate
-        .as_deref()
-        .or(header_id.as_deref())
-        .unwrap_or("");
-    let coordinate_mode = header_coordinate.is_some();
-    let add_item_cmd = item_add_command(&relay, header_ref, coordinate_mode);
+    let add_item_cmd = item_add_command(&relay, &header_ref, coordinate_mode);
 
     if all_items.is_empty() {
         return Err(
@@ -420,12 +426,7 @@ pub async fn list_items(
     .next_actions(actions))
 }
 
-async fn fetch_items_by_coordinate(
-    client: &Client,
-    _relay: &str,
-    coord_str: &str,
-    limit: usize,
-) -> Result<Vec<serde_json::Value>, CommandError> {
+fn normalize_coordinate_ref(coord_str: &str) -> Result<String, CommandError> {
     let parts: Vec<&str> = coord_str.splitn(3, ':').collect();
     if parts.len() != 3 {
         return Err(CommandError::from(AppError::InvalidCoordinate {
@@ -437,6 +438,11 @@ async fn fetch_items_by_coordinate(
             input: coord_str.to_string(),
         })
     })?;
+    if kind_num != 39998 {
+        return Err(CommandError::from(AppError::InvalidCoordinate {
+            input: coord_str.to_string(),
+        }));
+    }
     let pubkey = PublicKey::parse(parts[1]).map_err(|_| {
         CommandError::from(AppError::InvalidCoordinate {
             input: coord_str.to_string(),
@@ -444,30 +450,54 @@ async fn fetch_items_by_coordinate(
     })?;
     let d_tag = parts[2];
 
-    let coord = Coordinate::new(Kind::Custom(kind_num), pubkey).identifier(d_tag);
-    let filter = Filter::new()
-        .kinds(vec![Kind::Custom(9999), Kind::Custom(39999)])
-        .custom_tag(SingleLetterTag::lowercase(Alphabet::A), coord.to_string())
-        .limit(limit);
-
-    let events = client
-        .fetch_events(filter, QUERY_TIMEOUT)
-        .await
-        .unwrap_or_default();
-
-    Ok(events.iter().map(event_to_json).collect())
+    Ok(format!("39998:{}:{}", pubkey.to_hex(), d_tag))
 }
 
-async fn fetch_all_items(
+async fn fetch_header_event_by_id(
     client: &Client,
     relay: &str,
     event_id: EventId,
-    limit: usize,
-) -> Vec<serde_json::Value> {
-    // Fetch items that reference this header via e-tag
+) -> Result<Event, CommandError> {
+    let filter = Filter::new().id(event_id).limit(1);
+    let header_events = client
+        .fetch_events(filter, QUERY_TIMEOUT)
+        .await
+        .map_err(|_| {
+            CommandError::from(AppError::RelayUnreachable {
+                url: relay.to_string(),
+            })
+        })?;
+
+    header_events.into_iter().next().ok_or_else(|| {
+        CommandError::from(AppError::HeaderNotFound {
+            event_id: event_id.to_hex(),
+        })
+    })
+}
+
+fn z_ref_for_header_event(header_event: &Event) -> Result<(String, bool), CommandError> {
+    match header_event.kind {
+        Kind::Custom(9998) => Ok((header_event.id.to_hex(), false)),
+        Kind::Custom(39998) => {
+            let d_val = header_d_tag(header_event)
+                .ok_or_else(|| CommandError::from(AppError::HeaderMissingDTag))?;
+            Ok((
+                format!("39998:{}:{}", header_event.pubkey.to_hex(), d_val),
+                true,
+            ))
+        }
+        _ => Err(CommandError::new(
+            "header reference must point to a list header (kind 9998 or 39998)",
+            "INVALID_ARGS",
+            "Provide a list header ID, or use --header-coordinate=<39998:pubkey:d-tag>",
+        )),
+    }
+}
+
+async fn fetch_items_by_z(client: &Client, z_ref: &str, limit: usize) -> Vec<serde_json::Value> {
     let filter = Filter::new()
         .kinds(vec![Kind::Custom(9999), Kind::Custom(39999)])
-        .event(event_id)
+        .custom_tag(SingleLetterTag::lowercase(Alphabet::Z), z_ref.to_string())
         .limit(limit);
 
     let events = client
@@ -475,58 +505,7 @@ async fn fetch_all_items(
         .await
         .unwrap_or_default();
 
-    // Also try fetching by coordinate reference (for addressable headers)
-    let header_filter = Filter::new().id(event_id).limit(1);
-    let header_events = client
-        .fetch_events(header_filter, Duration::from_secs(5))
-        .await
-        .unwrap_or_default();
-
-    let mut all_items: Vec<serde_json::Value> = events.iter().map(event_to_json).collect();
-
-    // If header is addressable, also search by coordinate
-    if let Some(header_event) = header_events.into_iter().next() {
-        if header_event.kind == Kind::Custom(39998) {
-            fetch_coordinate_items(client, relay, &header_event, limit, &mut all_items).await;
-        }
-    }
-
-    all_items
-}
-
-async fn fetch_coordinate_items(
-    client: &Client,
-    _relay: &str,
-    header_event: &Event,
-    limit: usize,
-    all_items: &mut Vec<serde_json::Value>,
-) {
-    let Some(d_val) = header_d_tag(header_event) else {
-        return;
-    };
-
-    let coord = Coordinate::new(Kind::Custom(39998), header_event.pubkey).identifier(&d_val);
-    let coord_filter = Filter::new()
-        .kinds(vec![Kind::Custom(9999), Kind::Custom(39999)])
-        .custom_tag(SingleLetterTag::lowercase(Alphabet::A), coord.to_string())
-        .limit(limit);
-
-    let Ok(coord_events) = client.fetch_events(coord_filter, QUERY_TIMEOUT).await else {
-        return;
-    };
-
-    // Deduplicate by event_id
-    let mut existing_ids: HashSet<String> = all_items
-        .iter()
-        .filter_map(|i| i["event_id"].as_str().map(String::from))
-        .collect();
-
-    for ev in coord_events.iter() {
-        let id = ev.id.to_hex();
-        if existing_ids.insert(id) {
-            all_items.push(event_to_json(ev));
-        }
-    }
+    events.iter().map(event_to_json).collect()
 }
 
 async fn fetch_items_for_header_event(
@@ -534,39 +513,11 @@ async fn fetch_items_for_header_event(
     relay: &str,
     header_event: &Event,
 ) -> Result<Vec<Event>, CommandError> {
-    let mut items: Vec<Event> = Vec::new();
-    let mut seen_ids: HashSet<String> = HashSet::new();
-
-    let e_filter = Filter::new()
+    let (z_ref, _) = z_ref_for_header_event(header_event)?;
+    let z_filter = Filter::new()
         .kinds(vec![Kind::Custom(9999), Kind::Custom(39999)])
-        .event(header_event.id);
-    let e_events = fetch_all_events(client, relay, e_filter).await?;
-
-    for event in e_events {
-        let event_id = event.id.to_hex();
-        if seen_ids.insert(event_id) {
-            items.push(event);
-        }
-    }
-
-    if header_event.kind == Kind::Custom(39998) {
-        if let Some(d_val) = header_d_tag(header_event) {
-            let coord =
-                Coordinate::new(Kind::Custom(39998), header_event.pubkey).identifier(&d_val);
-            let a_filter = Filter::new()
-                .kinds(vec![Kind::Custom(9999), Kind::Custom(39999)])
-                .custom_tag(SingleLetterTag::lowercase(Alphabet::A), coord.to_string());
-            let a_events = fetch_all_events(client, relay, a_filter).await?;
-
-            for event in a_events {
-                let event_id = event.id.to_hex();
-                if seen_ids.insert(event_id) {
-                    items.push(event);
-                }
-            }
-        }
-    }
-
+        .custom_tag(SingleLetterTag::lowercase(Alphabet::Z), z_ref);
+    let mut items = fetch_all_events(client, relay, z_filter).await?;
     sort_events_desc(&mut items);
     Ok(items)
 }
@@ -784,32 +735,36 @@ mod tests {
     }
 
     #[test]
-    fn event_to_json_names_tag_extracts_name_and_aliases() {
-        let tags = vec![Tag::custom(
-            TagKind::custom("names"),
-            ["mylist", "alias1", "alias2"],
-        )];
+    fn event_to_json_names_tag_extracts_singular_and_plural() {
+        let tags = vec![Tag::custom(TagKind::custom("names"), ["mylist", "mylists"])];
         let event = make_event(Kind::Custom(9998), "", tags);
         let j = event_to_json(&event);
         assert_eq!(j["name"], "mylist");
-        assert_eq!(j["aliases"], json!(["alias1", "alias2"]));
+        assert_eq!(j["plural_name"], "mylists");
+        assert_eq!(j["names"], json!(["mylist", "mylists"]));
     }
 
     #[test]
-    fn event_to_json_single_name_no_aliases() {
+    fn event_to_json_single_name_sets_only_singular_name() {
         let tags = vec![Tag::custom(TagKind::custom("names"), ["mylist"])];
         let event = make_event(Kind::Custom(9998), "", tags);
         let j = event_to_json(&event);
         assert_eq!(j["name"], "mylist");
-        assert!(j.get("aliases").is_none());
+        assert!(j.get("plural_name").is_none());
+        assert!(j.get("names").is_none());
     }
 
     #[test]
-    fn event_to_json_title_extracted() {
-        let tags = vec![Tag::custom(TagKind::custom("title"), ["My Title"])];
+    fn event_to_json_titles_tag_extracted() {
+        let tags = vec![Tag::custom(
+            TagKind::custom("titles"),
+            ["My List", "My Lists"],
+        )];
         let event = make_event(Kind::Custom(9998), "", tags);
         let j = event_to_json(&event);
-        assert_eq!(j["title"], "My Title");
+        assert_eq!(j["title"], "My List");
+        assert_eq!(j["plural_title"], "My Lists");
+        assert_eq!(j["titles"], json!(["My List", "My Lists"]));
     }
 
     #[test]
@@ -857,7 +812,7 @@ mod tests {
     fn event_to_json_tags_array_structure() {
         let tags = vec![
             Tag::custom(TagKind::custom("r"), ["https://example.com"]),
-            Tag::custom(TagKind::custom("z"), ["listItem"]),
+            Tag::custom(TagKind::custom("z"), ["39998:deadbeef:my-list"]),
         ];
         let event = make_event(Kind::Custom(9999), "", tags);
         let j = event_to_json(&event);
@@ -866,7 +821,7 @@ mod tests {
         assert_eq!(tags_arr[0][0], "r");
         assert_eq!(tags_arr[0][1], "https://example.com");
         assert_eq!(tags_arr[1][0], "z");
-        assert_eq!(tags_arr[1][1], "listItem");
+        assert_eq!(tags_arr[1][1], "39998:deadbeef:my-list");
     }
 
     #[test]

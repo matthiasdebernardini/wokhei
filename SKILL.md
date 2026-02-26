@@ -70,17 +70,17 @@ echo "nsec1..." | wokhei init --import -
 
 Regular (kind 9998):
 ```bash
-wokhei create-header --name=playlist --title="Jazz Favorites" --tags=jazz,music
+wokhei create-header --name=playlist --plural=playlists --titles="Playlist,Playlists" --tags=jazz,music
 ```
 
 Addressable (kind 39998) — persists across updates, keyed by d-tag:
 ```bash
-wokhei create-header --name=genres --title="Music Genres" --addressable --d-tag=music-genres
+wokhei create-header --name=genre --plural=genres --titles="Genre,Genres" --addressable --d-tag=music-genres
 ```
 
 With production relay:
 ```bash
-wokhei create-header --relay=wss://dcosl.brainstorm.world --name=playlist --title="Jazz Favorites"
+wokhei create-header --relay=wss://dcosl.brainstorm.world --name=playlist --plural=playlists
 ```
 
 ### 3. Add Items to the List
@@ -150,11 +150,11 @@ wokhei delete <event-id>
 
 | Tag | Description | Example |
 |-----|-------------|---------|
-| `names` | List name + aliases | `["names", "playlist", "playlists"]` |
-| `title` | Display title | `["title", "Jazz Favorites"]` |
+| `names` | Required singular + plural list names | `["names", "playlist", "playlists"]` |
+| `titles` | Optional singular + plural display titles | `["titles", "Playlist", "Playlists"]` |
 | `description` | Long description | `["description", "My curated jazz list"]` |
 | `required` | Required item fields | `["required", "url", "title"]` |
-| `recommended` | Optional item fields | `["recommended", "artist", "album"]` |
+| `recommended` | Optional item field (repeat tag per field) | `["recommended", "artist"]` |
 | `t` | Topic hashtag | `["t", "jazz"]` |
 | `alt` | Alt text | `["alt", "DCoSL list: playlist — Jazz Favorites"]` |
 | `d` | Identifier (addressable) | `["d", "music-genres"]` |
@@ -164,21 +164,17 @@ wokhei delete <event-id>
 
 | Tag | Description | Example |
 |-----|-------------|---------|
-| `e` | Header event ID ref | `["e", "<hex-id>"]` |
-| `a` | Header coordinate ref | `["a", "39998:<pubkey>:<d-tag>"]` |
+| `z` | Parent list pointer (required) | `["z", "<header-id>"]` or `["z", "39998:<pubkey>:<d-tag>"]` |
 | `r` | Resource URL/ID | `["r", "https://example.com/song"]` |
-| `z` | Item type | `["z", "listItem"]` |
+| `p` / `e` / `t` / `a` | Item payload tags as required/allowed by parent header | `["p", "<pubkey>"]` |
 | custom | Field key=value | `["title", "Kind of Blue"]` |
 
-### z-tag Values
+### z-tag Parent Pointer Rules
 
-- `listItem` (default)
-- `relationship`
-- `set`
-- `superset`
-- `property`
-- `jsonSchema`
-
+- For parent header kind `9998`: use the header event id in `z`
+- For parent header kind `39998`: use coordinate `39998:<pubkey>:<d-tag>` in `z`
+- `wokhei add-item` derives `z` automatically from `--header` or `--header-coordinate`
+- `--z-tag` is intentionally unsupported
 ## Error Handling
 
 1. Check `ok` field — `true` means success
@@ -205,7 +201,7 @@ wokhei delete <event-id>
 
 ## When to Use --header vs --header-coordinate
 
-- **`--header=<event-id>`**: Default mode. Fetches the header from the relay to auto-detect its kind and build the correct reference tag. Use when the header is on the same relay.
+- **`--header=<event-id>`**: Default mode. Fetches the header from the relay to auto-detect its kind and derive the correct `z` parent pointer. Use when the header is on the same relay.
 - **`--header-coordinate=<kind:pubkey:d-tag>`**: Detached mode. No relay lookup. Use for cross-relay references or when you already know the coordinate from a previous `create-header` result.
 
 ## Event Kinds
@@ -222,5 +218,5 @@ wokhei delete <event-id>
 For custom events not covered by built-in commands:
 
 ```bash
-echo '{"kind": 9998, "content": "", "tags": [["names", "test"], ["title", "Test"]]}' | wokhei publish --relay=wss://dcosl.brainstorm.world -
+echo '{"kind": 9998, "content": "", "tags": [["names", "test", "tests"], ["titles", "Test", "Tests"]]}' | wokhei publish --relay=wss://dcosl.brainstorm.world -
 ```
