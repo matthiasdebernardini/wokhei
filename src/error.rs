@@ -110,6 +110,6 @@ impl AppError {
 
 impl From<AppError> for CommandError {
     fn from(err: AppError) -> Self {
-        CommandError::new(err.to_string(), err.code(), err.fix())
+        CommandError::new(err.to_string(), err.code(), err.fix()).retryable(err.retryable())
     }
 }

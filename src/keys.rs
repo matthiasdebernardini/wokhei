@@ -84,11 +84,11 @@ fn post_init_actions(pubkey_hex: &str) -> Vec<NextAction> {
     vec![
         NextAction::new("wokhei whoami", "Verify your identity"),
         NextAction::new(
-            "wokhei create-header --relay ws://localhost:7777 --name <name> --title <title>",
+            "wokhei create-header --name=<name> --title=<title>",
             "Create your first list header",
         ),
         NextAction::new(
-            format!("wokhei list-headers --relay ws://localhost:7777 --author {pubkey_hex}"),
+            format!("wokhei list-headers --author={pubkey_hex}"),
             "List your headers",
         ),
     ]
@@ -169,11 +169,11 @@ pub fn whoami() -> Result<CommandOutput, CommandError> {
     let pubkey_hex = keys.public_key().to_hex();
     let actions = vec![
         NextAction::new(
-            format!("wokhei list-headers --relay ws://localhost:7777 --author {pubkey_hex}"),
+            format!("wokhei list-headers --author={pubkey_hex}"),
             "List your headers",
         ),
         NextAction::new(
-            "wokhei create-header --relay ws://localhost:7777 --name <name> --title <title>",
+            "wokhei create-header --name=<name> --title=<title>",
             "Create a new list header",
         ),
     ];

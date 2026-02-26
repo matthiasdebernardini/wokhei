@@ -17,18 +17,31 @@ cargo install wokhei
 wokhei init --generate
 
 # Create a list header
-wokhei create-header --relay ws://localhost:7777 --name playlist --title "Jazz Favorites" --tags jazz,music
+wokhei create-header --name=playlist --title="Jazz Favorites" --tags=jazz,music
 
 # Add an item
-wokhei add-item --relay ws://localhost:7777 --header <event-id> --resource "https://example.com/song"
+wokhei add-item --header=<event-id> --resource="https://example.com/song"
 
 # Query
-wokhei list-headers --relay ws://localhost:7777
-wokhei list-items --relay ws://localhost:7777 <header-id>
-wokhei inspect --relay ws://localhost:7777 <event-id>
+wokhei list-headers
+wokhei list-headers --name=playlist
+wokhei list-items <header-id>
+wokhei list-items --header-coordinate="39998:<pubkey>:<d-tag>"
+wokhei inspect <event-id>
 
 # Delete (NIP-09 request)
-wokhei delete --relay ws://localhost:7777 <event-id>
+wokhei delete <event-id>
+```
+
+## Relay Configuration
+
+Default relay: `ws://localhost:7777`
+
+Override with `--relay=<url>` flag or `WOKHEI_RELAY` env var:
+
+```bash
+export WOKHEI_RELAY=wss://dcosl.brainstorm.world
+wokhei list-headers
 ```
 
 ## JSON Response Envelope
@@ -36,9 +49,9 @@ wokhei delete --relay ws://localhost:7777 <event-id>
 ```json
 {
   "ok": true,
-  "schema_version": "wokhei.v1",
   "command": "command-name",
-  "timestamp": "ISO-8601 UTC",
+  "timestamp": 1740000000,
+  "schema_version": "wokhei.v1",
   "result": { },
   "next_actions": [
     { "command": "wokhei ...", "description": "What this does" }

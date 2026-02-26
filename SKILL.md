@@ -11,9 +11,9 @@ Every response has this exact shape:
 ```json
 {
   "ok": true|false,
-  "schema_version": "wokhei.v1",
   "command": "command-name",
-  "timestamp": "ISO-8601 UTC",
+  "timestamp": 1740000000,
+  "schema_version": "wokhei.v1",
   "result": { ... },       // present when ok=true
   "error": {               // present when ok=false
     "message": "...",
@@ -30,6 +30,10 @@ Every response has this exact shape:
 }
 ```
 
+- `timestamp` is Unix epoch seconds (u64)
+- `schema_version` is always `"wokhei.v1"`
+- `retryable` indicates if the error is transient and the command can be retried
+
 ## How to Follow next_actions
 
 After every command, read `next_actions`. Each entry is a runnable command template. Fill in any `<placeholder>` values with real data from previous results, then execute.
@@ -38,6 +42,13 @@ After every command, read `next_actions`. Each entry is a runnable command templ
 
 - **Dev (local)**: `ws://localhost:7777` (default — requires `docker compose up -d` in `strfry/`)
 - **Prod**: `wss://dcosl.brainstorm.world`
+
+Set `WOKHEI_RELAY` env var to override the default relay for all commands:
+```bash
+export WOKHEI_RELAY=wss://dcosl.brainstorm.world
+```
+
+Precedence: `--relay=<url>` flag > `WOKHEI_RELAY` env var > `ws://localhost:7777` default.
 
 ## Workflow
 
@@ -49,42 +60,75 @@ wokhei init --generate
 
 Returns `pubkey` (hex) and `npub` (bech32). Keys saved to `~/.wokhei/keys`.
 
+Import existing key from stdin:
+```bash
+echo "nsec1..." | wokhei init --import=-
+```
+
 ### 2. Create a List Header
 
 Regular (kind 9998):
 ```bash
-wokhei create-header --relay ws://localhost:7777 --name playlist --title "Jazz Favorites" --tags jazz,music
+wokhei create-header --name=playlist --title="Jazz Favorites" --tags=jazz,music
 ```
 
 Addressable (kind 39998) — persists across updates, keyed by d-tag:
 ```bash
-wokhei create-header --relay ws://localhost:7777 --name genres --title "Music Genres" --addressable --d-tag music-genres
+wokhei create-header --name=genres --title="Music Genres" --addressable --d-tag=music-genres
+```
+
+With production relay:
+```bash
+wokhei create-header --relay=wss://dcosl.brainstorm.world --name=playlist --title="Jazz Favorites"
 ```
 
 ### 3. Add Items to the List
 
 By header event ID (fetches header to auto-detect kind):
 ```bash
-wokhei add-item --relay ws://localhost:7777 --header <event-id> --resource "https://example.com/song" --fields "title=Kind of Blue,artist=Miles Davis"
+wokhei add-item --header=<event-id> --resource="https://example.com/song" --fields="title=Kind of Blue,artist=Miles Davis"
 ```
 
 By coordinate (cross-relay, no lookup needed):
 ```bash
-wokhei add-item --relay ws://localhost:7777 --header-coordinate "39998:<pubkey>:<d-tag>" --resource jazz
+wokhei add-item --header-coordinate="39998:<pubkey>:<d-tag>" --resource=jazz
 ```
 
 ### 4. Query and Verify
 
 ```bash
-wokhei list-headers --relay ws://localhost:7777
-wokhei list-items --relay ws://localhost:7777 <header-event-id>
-wokhei inspect --relay ws://localhost:7777 <event-id>
+# List all headers (default limit: 50)
+wokhei list-headers
+
+# List headers on production relay
+wokhei list-headers --relay=wss://dcosl.brainstorm.world
+
+# Filter by author
+wokhei list-headers --author=<pubkey>
+
+# Filter by topic tag
+wokhei list-headers --tag=jazz
+
+# Filter by name substring (client-side)
+wokhei list-headers --name=playlist
+
+# Combine filters with limit
+wokhei list-headers --author=<pubkey> --tag=jazz --limit=10
+
+# List items by header event ID (default limit: 100)
+wokhei list-items <header-event-id>
+
+# List items by header coordinate (no event ID needed)
+wokhei list-items --header-coordinate="39998:<pubkey>:<d-tag>"
+
+# Inspect a single event
+wokhei inspect <event-id>
 ```
 
 ### 5. Delete (NIP-09)
 
 ```bash
-wokhei delete --relay ws://localhost:7777 <event-id>
+wokhei delete <event-id>
 ```
 
 **Caveat**: Deletion is a NIP-09 REQUEST — relays may or may not honor it.
@@ -128,8 +172,9 @@ wokhei delete --relay ws://localhost:7777 <event-id>
 
 1. Check `ok` field — `true` means success
 2. If `false`, read `error.code` for machine-readable classification
-3. Read `fix` for a human-readable suggestion
-4. Follow `next_actions` to recover
+3. Check `error.retryable` — if `true`, the command can be retried (e.g., relay timeout)
+4. Read `fix` for a human-readable suggestion
+5. Follow `next_actions` to recover
 
 ### Error Codes
 
@@ -143,13 +188,14 @@ wokhei delete --relay ws://localhost:7777 <event-id>
 | `INVALID_EVENT_ID` | Bad event ID format | No |
 | `NO_RESULTS` | Query returned 0 events | No |
 | `INVALID_NSEC` | Bad nsec format on import | No |
+| `INVALID_COORDINATE` | Bad coordinate format | No |
 | `INVALID_ARGS` | Bad CLI arguments / help / version | No |
 | `INTERNAL_ERROR` | Panic / unexpected error | No |
 
 ## When to Use --header vs --header-coordinate
 
-- **`--header <event-id>`**: Default mode. Fetches the header from the relay to auto-detect its kind and build the correct reference tag. Use when the header is on the same relay.
-- **`--header-coordinate <kind:pubkey:d-tag>`**: Detached mode. No relay lookup. Use for cross-relay references or when you already know the coordinate from a previous `create-header` result.
+- **`--header=<event-id>`**: Default mode. Fetches the header from the relay to auto-detect its kind and build the correct reference tag. Use when the header is on the same relay.
+- **`--header-coordinate=<kind:pubkey:d-tag>`**: Detached mode. No relay lookup. Use for cross-relay references or when you already know the coordinate from a previous `create-header` result.
 
 ## Event Kinds
 
@@ -165,5 +211,5 @@ wokhei delete --relay ws://localhost:7777 <event-id>
 For custom events not covered by built-in commands:
 
 ```bash
-echo '{"kind": 9998, "content": "", "tags": [["names", "test"], ["title", "Test"]]}' | wokhei publish --relay ws://localhost:7777 -
+echo '{"kind": 9998, "content": "", "tags": [["names", "test"], ["title", "Test"]]}' | wokhei publish --relay=wss://dcosl.brainstorm.world -
 ```

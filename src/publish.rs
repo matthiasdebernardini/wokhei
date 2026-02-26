@@ -82,7 +82,7 @@ pub async fn publish(relay: String, input: String) -> Result<CommandOutput, Comm
             });
 
             let actions = vec![NextAction::new(
-                format!("wokhei inspect --relay {relay} {event_id}"),
+                format!("wokhei inspect --relay={relay} {event_id}"),
                 "Inspect the published event",
             )];
 

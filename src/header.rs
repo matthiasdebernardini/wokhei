@@ -81,10 +81,10 @@ pub async fn create_header(params: HeaderParams) -> Result<CommandOutput, Comman
 
     if params.addressable && params.d_tag.is_none() {
         return Err(CommandError::new(
-            "--addressable requires --d-tag <identifier>",
+            "--addressable requires --d-tag=<identifier>",
             "MISSING_ARG",
             format!(
-                "Re-run with: wokhei create-header --relay {} --name {} --title \"{}\" --addressable --d-tag <identifier>",
+                "Re-run with: wokhei create-header --relay={} --name={} --title=\"{}\" --addressable --d-tag=<identifier>",
                 params.relay, params.name, params.title,
             ),
         ));
@@ -127,15 +127,15 @@ pub async fn create_header(params: HeaderParams) -> Result<CommandOutput, Comman
 
             let mut actions = vec![
                 NextAction::new(
-                    format!("wokhei add-item --relay {relay} --header {event_id} --resource <url>"),
+                    format!("wokhei add-item --relay={relay} --header={event_id} --resource=<url>"),
                     "Add an item to this list",
                 ),
                 NextAction::new(
-                    format!("wokhei inspect --relay {relay} {event_id}"),
+                    format!("wokhei inspect --relay={relay} {event_id}"),
                     "Inspect the created header",
                 ),
                 NextAction::new(
-                    format!("wokhei list-headers --relay {relay}"),
+                    format!("wokhei list-headers --relay={relay}"),
                     "List all headers on this relay",
                 ),
             ];
@@ -145,7 +145,7 @@ pub async fn create_header(params: HeaderParams) -> Result<CommandOutput, Comman
                 actions.insert(
                     1,
                     NextAction::new(
-                        format!("wokhei add-item --relay {relay} --header-coordinate \"{coord}\" --resource <url>"),
+                        format!("wokhei add-item --relay={relay} --header-coordinate=\"{coord}\" --resource=<url>"),
                         "Add item using coordinate reference",
                     ),
                 );

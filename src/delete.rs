@@ -49,7 +49,7 @@ pub async fn delete(
             });
 
             let actions = vec![NextAction::new(
-                format!("wokhei list-headers --relay {relay}"),
+                format!("wokhei list-headers --relay={relay}"),
                 "List headers to verify deletion",
             )];
 

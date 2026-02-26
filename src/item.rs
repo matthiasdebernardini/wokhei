@@ -84,7 +84,7 @@ async fn resolve_header_by_id(
         })
         .next_actions(vec![NextAction::new(
             format!(
-                "wokhei add-item --relay {relay} --header-coordinate <kind:pubkey:d-tag> --resource \"{resource}\""
+                "wokhei add-item --relay={relay} --header-coordinate=<kind:pubkey:d-tag> --resource=\"{resource}\""
             ),
             "Use coordinate reference instead (cross-relay)",
         )])
@@ -138,16 +138,16 @@ fn build_item_tags(
 fn validate_item_params(params: &ItemParams) -> Result<(), CommandError> {
     if params.header.is_none() && params.header_coordinate.is_none() {
         return Err(CommandError::new(
-            "Specify --header <event-id> or --header-coordinate <kind:pubkey:d-tag>",
+            "Specify --header=<event-id> or --header-coordinate=<kind:pubkey:d-tag>",
             "MISSING_ARG",
             "Use --header with an event ID, or --header-coordinate with kind:pubkey:d-tag",
         ));
     }
     if params.addressable && params.d_tag.is_none() {
         return Err(CommandError::new(
-            "--addressable requires --d-tag <identifier>",
+            "--addressable requires --d-tag=<identifier>",
             "MISSING_ARG",
-            "Add --d-tag <identifier> when using --addressable",
+            "Add --d-tag=<identifier> when using --addressable",
         ));
     }
     Ok(())
@@ -212,22 +212,22 @@ pub async fn add_item(params: ItemParams) -> Result<CommandOutput, CommandError>
                     "header_ref": header_ref_str, "resource": resource,
                 });
                 let header_flag = if header_coordinate.is_some() {
-                    format!("--header-coordinate \"{header_ref_str}\"")
+                    format!("--header-coordinate=\"{header_ref_str}\"")
                 } else {
-                    format!("--header {}", header.as_deref().unwrap_or(""))
+                    format!("--header={}", header.as_deref().unwrap_or(""))
                 };
                 let actions = vec![
                     NextAction::new(
-                        format!("wokhei inspect --relay {relay} {event_id}"),
+                        format!("wokhei inspect --relay={relay} {event_id}"),
                         "Inspect the created item",
                     ),
                     NextAction::new(
-                        format!("wokhei add-item --relay {relay} {header_flag} --resource <url>"),
+                        format!("wokhei add-item --relay={relay} {header_flag} --resource=<url>"),
                         "Add another item to this list",
                     ),
                     NextAction::new(
                         format!(
-                            "wokhei list-items --relay {relay} {}",
+                            "wokhei list-items --relay={relay} {}",
                             header.as_deref().unwrap_or(&header_ref_str)
                         ),
                         "List all items in this list",

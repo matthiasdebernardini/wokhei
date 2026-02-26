@@ -14,9 +14,9 @@ dependencies = [
 
 [[package]]
 name = "agcli"
-version = "0.2.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd0d6ddb840166b347b8cf1a1d4d9decc3227d7f353bda3b014232453e4c9fd5"
+checksum = "7b6ddabc77bea0373664b9dd5a5e8c368ece64cdca15456c8b4a50a388eee598"
 dependencies = [
  "serde",
  "serde_json",

@@ -55,6 +55,14 @@ fn parse_usize_flag(
     }
 }
 
+/// Resolve relay URL from --relay flag, `WOKHEI_RELAY` env var, or default.
+fn resolve_relay(req: &CommandRequest<'_>) -> String {
+    req.flag("relay")
+        .map(String::from)
+        .or_else(|| std::env::var("WOKHEI_RELAY").ok())
+        .unwrap_or_else(|| "ws://localhost:7777".to_string())
+}
+
 // ---------------------------------------------------------------------------
 // Command builders
 // ---------------------------------------------------------------------------
@@ -64,7 +72,7 @@ fn init_command() -> Command {
         "init",
         "Initialize keypair (generate new or import existing)",
     )
-    .usage("wokhei init --generate | --import <file-or-stdin>")
+    .usage("wokhei init --generate | --import=<file-or-stdin>")
     .handler(|req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
         let generate = parse_bool_flag(req, "generate")?;
         let import = req.flag("import");
@@ -89,19 +97,19 @@ fn whoami_command() -> Command {
 
 fn create_header_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
     Command::new("create-header", "Create a list header event (kind 9998 or 39998)")
-        .usage("wokhei create-header --name <name> --title <title> [--relay <url>] [--aliases a,b] [--description <desc>] [--required f1,f2] [--recommended f1,f2] [--tags t1,t2] [--alt <text>] [--addressable --d-tag <id>]")
+        .usage("wokhei create-header --name=<name> --title=<title> [--relay=<url>] [--aliases=a,b] [--description=<desc>] [--required=f1,f2] [--recommended=f1,f2] [--tags=t1,t2] [--alt=<text>] [--addressable --d-tag=<id>]")
         .handler(move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
             let name = req.flag("name").ok_or_else(|| {
-                CommandError::new("--name is required", "MISSING_ARG", "Provide --name <list-name>")
+                CommandError::new("--name is required", "MISSING_ARG", "Provide --name=<list-name>")
             })?;
             let title = req.flag("title").ok_or_else(|| {
-                CommandError::new("--title is required", "MISSING_ARG", "Provide --title <list-title>")
+                CommandError::new("--title is required", "MISSING_ARG", "Provide --title=<list-title>")
             })?;
-            let relay = req.flag("relay").unwrap_or("ws://localhost:7777");
+            let relay = resolve_relay(req);
             let addressable = parse_bool_flag(req, "addressable")?;
 
             let params = header::HeaderParams {
-                relay: relay.to_string(),
+                relay,
                 name: name.to_string(),
                 aliases: parse_csv(req.flag("aliases")),
                 title: title.to_string(),
@@ -120,16 +128,16 @@ fn create_header_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
 
 fn add_item_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
     Command::new("add-item", "Add an item to a list (kind 9999 or 39999)")
-        .usage("wokhei add-item --header <event-id> | --header-coordinate <kind:pubkey:d-tag> --resource <url> [--relay <url>] [--content <json>] [--fields k=v,...] [--z-tag <type>] [--addressable --d-tag <id>]")
+        .usage("wokhei add-item --header=<event-id> | --header-coordinate=<kind:pubkey:d-tag> --resource=<url> [--relay=<url>] [--content=<json>] [--fields=k=v,...] [--z-tag=<type>] [--addressable --d-tag=<id>]")
         .handler(move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
             let resource = req.flag("resource").ok_or_else(|| {
-                CommandError::new("--resource is required", "MISSING_ARG", "Provide --resource <url>")
+                CommandError::new("--resource is required", "MISSING_ARG", "Provide --resource=<url>")
             })?;
-            let relay = req.flag("relay").unwrap_or("ws://localhost:7777");
+            let relay = resolve_relay(req);
             let addressable = parse_bool_flag(req, "addressable")?;
 
             let params = item::ItemParams {
-                relay: relay.to_string(),
+                relay,
                 header: req.flag("header").map(String::from),
                 header_coordinate: req.flag("header-coordinate").map(String::from),
                 resource: resource.to_string(),
@@ -146,50 +154,47 @@ fn add_item_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
 
 fn list_headers_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
     Command::new("list-headers", "List header events from a relay")
-        .usage(
-            "wokhei list-headers [--relay <url>] [--author <pubkey>] [--tag <topic>] [--limit <n>]",
-        )
+        .usage("wokhei list-headers [--relay=<url>] [--author=<pubkey>] [--tag=<topic>] [--name=<substring>] [--limit=<n>]")
         .handler(
             move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
-                let relay = req
-                    .flag("relay")
-                    .unwrap_or("ws://localhost:7777")
-                    .to_string();
+                let relay = resolve_relay(req);
                 let author = req.flag("author").map(String::from);
                 let tag = req.flag("tag").map(String::from);
+                let name = req.flag("name").map(String::from);
                 let limit = parse_usize_flag(req, "limit", 50)?;
 
-                rt.block_on(query::list_headers(relay, author, tag, limit))
+                rt.block_on(query::list_headers(relay, author, tag, name, limit))
             },
         )
 }
 
 fn list_items_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
     Command::new("list-items", "List items belonging to a header")
-        .usage("wokhei list-items <header-id> [--relay <url>] [--limit <n>]")
+        .usage("wokhei list-items <header-id> [--header-coordinate=<kind:pubkey:d-tag>] [--relay=<url>] [--limit=<n>]")
         .handler(
             move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
-                let header_id = req.arg(0).ok_or_else(|| {
-                    CommandError::new(
-                        "header ID is required",
+                let header_id = req.arg(0).map(String::from);
+                let header_coordinate = req.flag("header-coordinate").map(String::from);
+
+                if header_id.is_none() && header_coordinate.is_none() {
+                    return Err(CommandError::new(
+                        "header ID or --header-coordinate is required",
                         "MISSING_ARG",
-                        "Provide a header event ID as a positional argument",
-                    )
-                })?;
-                let relay = req
-                    .flag("relay")
-                    .unwrap_or("ws://localhost:7777")
-                    .to_string();
+                        "Provide a header event ID as a positional argument, or use --header-coordinate=<kind:pubkey:d-tag>",
+                    ));
+                }
+
+                let relay = resolve_relay(req);
                 let limit = parse_usize_flag(req, "limit", 100)?;
 
-                rt.block_on(query::list_items(relay, header_id.to_string(), limit))
+                rt.block_on(query::list_items(relay, header_id, header_coordinate, limit))
             },
         )
 }
 
 fn inspect_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
     Command::new("inspect", "Inspect a single event in full detail")
-        .usage("wokhei inspect <event-id> [--relay <url>]")
+        .usage("wokhei inspect <event-id> [--relay=<url>]")
         .handler(
             move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
                 let event_id = req.arg(0).ok_or_else(|| {
@@ -199,10 +204,7 @@ fn inspect_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
                         "Provide an event ID as a positional argument",
                     )
                 })?;
-                let relay = req
-                    .flag("relay")
-                    .unwrap_or("ws://localhost:7777")
-                    .to_string();
+                let relay = resolve_relay(req);
 
                 rt.block_on(query::inspect(relay, event_id.to_string()))
             },
@@ -211,7 +213,7 @@ fn inspect_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
 
 fn delete_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
     Command::new("delete", "Delete events (NIP-09 deletion request)")
-        .usage("wokhei delete <event-id>... [--relay <url>]")
+        .usage("wokhei delete <event-id>... [--relay=<url>]")
         .handler(
             move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
                 let positionals = req.positionals();
@@ -222,10 +224,7 @@ fn delete_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
                         "Provide one or more event IDs as positional arguments",
                     ));
                 }
-                let relay = req
-                    .flag("relay")
-                    .unwrap_or("ws://localhost:7777")
-                    .to_string();
+                let relay = resolve_relay(req);
                 let event_ids: Vec<String> = positionals.to_vec();
 
                 rt.block_on(delete::delete(relay, event_ids))
@@ -238,7 +237,7 @@ fn publish_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
         "publish",
         "Sign and publish raw event JSON from file or stdin",
     )
-    .usage("wokhei publish <json-file-or-stdin> [--relay <url>]")
+    .usage("wokhei publish <json-file-or-stdin> [--relay=<url>]")
     .handler(
         move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
             let input = req.arg(0).ok_or_else(|| {
@@ -248,10 +247,7 @@ fn publish_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
                     "Provide a JSON file path, or use - for stdin",
                 )
             })?;
-            let relay = req
-                .flag("relay")
-                .unwrap_or("ws://localhost:7777")
-                .to_string();
+            let relay = resolve_relay(req);
 
             rt.block_on(publish::publish(relay, input.to_string()))
         },
@@ -293,6 +289,7 @@ fn main() {
         "Agent-first CLI for Decentralized Lists on Nostr (DCoSL protocol)",
     )
     .version(env!("CARGO_PKG_VERSION"))
+    .schema_version("wokhei.v1")
     .root_field("keys_configured", json!(keys::keys_exist()))
     .command(init_command())
     .command(whoami_command())

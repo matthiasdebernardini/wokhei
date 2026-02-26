@@ -72,6 +72,7 @@ pub async fn list_headers(
     relay: String,
     author: Option<String>,
     tag: Option<String>,
+    name: Option<String>,
     limit: usize,
 ) -> Result<CommandOutput, CommandError> {
     let client = connect_client(&relay).await.map_err(CommandError::from)?;
@@ -110,12 +111,22 @@ pub async fn list_headers(
         }
     };
 
-    let headers: Vec<serde_json::Value> = events.iter().map(event_to_json).collect();
+    let mut headers: Vec<serde_json::Value> = events.iter().map(event_to_json).collect();
+
+    // Client-side name substring filter (Nostr can't do substring search)
+    if let Some(ref name_filter) = name {
+        let lower = name_filter.to_lowercase();
+        headers.retain(|h| {
+            h["name"]
+                .as_str()
+                .is_some_and(|n| n.to_lowercase().contains(&lower))
+        });
+    }
 
     if headers.is_empty() {
         return Err(
             CommandError::from(AppError::NoResults).next_actions(vec![NextAction::new(
-                format!("wokhei create-header --relay {relay} --name <name> --title <title>"),
+                format!("wokhei create-header --relay={relay} --name=<name> --title=<title>"),
                 "Create a new list header",
             )]),
         );
@@ -124,11 +135,11 @@ pub async fn list_headers(
     let first_id = headers[0]["event_id"].as_str().unwrap_or("").to_string();
     let actions = vec![
         NextAction::new(
-            format!("wokhei list-items --relay {relay} {first_id}"),
+            format!("wokhei list-items --relay={relay} {first_id}"),
             "List items for the first header",
         ),
         NextAction::new(
-            format!("wokhei create-header --relay {relay} --name <name> --title <title>"),
+            format!("wokhei create-header --relay={relay} --name=<name> --title=<title>"),
             "Create a new list header",
         ),
     ];
@@ -142,25 +153,35 @@ pub async fn list_headers(
 
 pub async fn list_items(
     relay: String,
-    header_id: String,
+    header_id: Option<String>,
+    header_coordinate: Option<String>,
     limit: usize,
 ) -> Result<CommandOutput, CommandError> {
-    let event_id = EventId::parse(&header_id).map_err(|_| {
-        CommandError::from(AppError::InvalidEventId {
-            id: header_id.clone(),
-        })
-    })?;
-
     let client = connect_client(&relay).await.map_err(CommandError::from)?;
 
-    let all_items = fetch_all_items(&client, &relay, event_id, limit).await;
+    let all_items = if let Some(ref coord_str) = header_coordinate {
+        fetch_items_by_coordinate(&client, &relay, coord_str, limit).await?
+    } else {
+        let id_str = header_id.as_deref().unwrap_or("");
+        let event_id = EventId::parse(id_str).map_err(|_| {
+            CommandError::from(AppError::InvalidEventId {
+                id: id_str.to_string(),
+            })
+        })?;
+        fetch_all_items(&client, &relay, event_id, limit).await
+    };
 
     client.disconnect().await;
+
+    let header_ref = header_coordinate
+        .as_deref()
+        .or(header_id.as_deref())
+        .unwrap_or("");
 
     if all_items.is_empty() {
         return Err(
             CommandError::from(AppError::NoResults).next_actions(vec![NextAction::new(
-                format!("wokhei add-item --relay {relay} --header {header_id} --resource <url>"),
+                format!("wokhei add-item --relay={relay} --header={header_ref} --resource=<url>"),
                 "Add an item to this list",
             )]),
         );
@@ -168,12 +189,12 @@ pub async fn list_items(
 
     let actions = vec![
         NextAction::new(
-            format!("wokhei add-item --relay {relay} --header {header_id} --resource <url>"),
+            format!("wokhei add-item --relay={relay} --header={header_ref} --resource=<url>"),
             "Add another item to this list",
         ),
         NextAction::new(
             format!(
-                "wokhei inspect --relay {relay} {}",
+                "wokhei inspect --relay={relay} {}",
                 all_items[0]["event_id"].as_str().unwrap_or("")
             ),
             "Inspect the first item",
@@ -182,10 +203,48 @@ pub async fn list_items(
 
     Ok(CommandOutput::new(json!({
         "count": all_items.len(),
-        "header_id": header_id,
+        "header_ref": header_ref,
         "items": all_items,
     }))
     .next_actions(actions))
+}
+
+async fn fetch_items_by_coordinate(
+    client: &Client,
+    _relay: &str,
+    coord_str: &str,
+    limit: usize,
+) -> Result<Vec<serde_json::Value>, CommandError> {
+    let parts: Vec<&str> = coord_str.splitn(3, ':').collect();
+    if parts.len() != 3 {
+        return Err(CommandError::from(AppError::InvalidCoordinate {
+            input: coord_str.to_string(),
+        }));
+    }
+    let kind_num: u16 = parts[0].parse().map_err(|_| {
+        CommandError::from(AppError::InvalidCoordinate {
+            input: coord_str.to_string(),
+        })
+    })?;
+    let pubkey = PublicKey::parse(parts[1]).map_err(|_| {
+        CommandError::from(AppError::InvalidCoordinate {
+            input: coord_str.to_string(),
+        })
+    })?;
+    let d_tag = parts[2];
+
+    let coord = Coordinate::new(Kind::Custom(kind_num), pubkey).identifier(d_tag);
+    let filter = Filter::new()
+        .kinds(vec![Kind::Custom(9999), Kind::Custom(39999)])
+        .custom_tag(SingleLetterTag::lowercase(Alphabet::A), coord.to_string())
+        .limit(limit);
+
+    let events = client
+        .fetch_events(filter, Duration::from_secs(10))
+        .await
+        .unwrap_or_default();
+
+    Ok(events.iter().map(event_to_json).collect())
 }
 
 async fn fetch_all_items(
@@ -300,7 +359,7 @@ pub async fn inspect(relay: String, event_id_str: String) -> Result<CommandOutpu
             event_id: event_id_str.clone(),
         })
         .next_actions(vec![NextAction::new(
-            format!("wokhei list-headers --relay {relay}"),
+            format!("wokhei list-headers --relay={relay}"),
             "List available headers",
         )])
     })?;
@@ -313,17 +372,17 @@ pub async fn inspect(relay: String, event_id_str: String) -> Result<CommandOutpu
     // Context-sensitive next actions
     if kind == 9998 || kind == 39998 {
         actions.push(NextAction::new(
-            format!("wokhei list-items --relay {relay} {event_id_str}"),
+            format!("wokhei list-items --relay={relay} {event_id_str}"),
             "List items in this list",
         ));
         actions.push(NextAction::new(
-            format!("wokhei add-item --relay {relay} --header {event_id_str} --resource <url>"),
+            format!("wokhei add-item --relay={relay} --header={event_id_str} --resource=<url>"),
             "Add an item to this list",
         ));
     }
 
     actions.push(NextAction::new(
-        format!("wokhei delete --relay {relay} {event_id_str}"),
+        format!("wokhei delete --relay={relay} {event_id_str}"),
         "Delete this event (NIP-09 request)",
     ));
 
