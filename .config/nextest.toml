@@ -1,0 +1,6 @@
+[test-groups.serial-env]
+max-threads = 1
+
+[[profile.default.overrides]]
+filter = "test(resolve_relay)"
+test-group = "serial-env"

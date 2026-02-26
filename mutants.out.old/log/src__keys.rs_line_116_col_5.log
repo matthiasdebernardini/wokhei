@@ -1,0 +1,483 @@
+
+*** src/keys.rs:116:5: replace read_nsec -> Result<String, CommandError> with Ok(String::new())
+
+*** mutation diff:
+--- src/keys.rs
++++ replace read_nsec -> Result<String, CommandError> with Ok(String::new())
+@@ -108,33 +108,17 @@
+         NextAction::new(
+             format!("wokhei list-headers --author={pubkey_hex}"),
+             "List your headers",
+         ),
+     ]
+ }
+ 
+ fn read_nsec<R: io::Read>(source: &str, stdin: R) -> Result<String, CommandError> {
+-    let raw = if source == "-" {
+-        let mut buf = String::new();
+-        let mut reader = stdin;
+-        reader.read_to_string(&mut buf).map_err(|e| {
+-            CommandError::from(AppError::Io {
+-                reason: e.to_string(),
+-            })
+-        })?;
+-        buf
+-    } else {
+-        fs::read_to_string(source).map_err(|e| {
+-            CommandError::from(AppError::Io {
+-                reason: format!("Failed to read {source}: {e}"),
+-            })
+-        })?
+-    };
+-    Ok(raw.trim().to_string())
++    Ok(String::new()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn read_nsec_from_source(source: &str) -> Result<String, CommandError> {
+     read_nsec(source, io::stdin())
+ }
+ 
+ pub fn init(generate: bool, import: Option<&str>) -> Result<CommandOutput, CommandError> {
+     if !generate && import.is_none() {
+
+
+*** /Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo test --no-run --verbose --package=wokhei@0.2.1
+       Fresh unicode-ident v1.0.24
+       Fresh cfg-if v1.0.4
+       Fresh shlex v1.3.0
+       Fresh find-msvc-tools v0.1.9
+       Fresh stable_deref_trait v1.2.1
+       Fresh litemap v0.8.1
+       Fresh proc-macro2 v1.0.106
+       Fresh cc v1.2.56
+       Fresh writeable v0.6.2
+       Fresh version_check v0.9.5
+       Fresh quote v1.0.44
+       Fresh libc v0.2.182
+       Fresh zerocopy v0.8.39
+       Fresh serde_core v1.0.228
+       Fresh itoa v1.0.17
+       Fresh syn v2.0.117
+       Fresh getrandom v0.2.17
+       Fresh ppv-lite86 v0.2.21
+       Fresh pin-project-lite v0.2.16
+       Fresh zeroize v1.8.2
+       Fresh bytes v1.11.1
+       Fresh icu_normalizer_data v2.1.1
+       Fresh icu_properties_data v2.1.2
+       Fresh synstructure v0.13.2
+       Fresh zerovec-derive v0.11.2
+       Fresh displaydoc v0.2.5
+       Fresh serde_derive v1.0.228
+       Fresh rustls-pki-types v1.14.0
+       Fresh typenum v1.19.0
+       Fresh smallvec v1.15.1
+       Fresh once_cell v1.21.3
+       Fresh tokio-macros v2.6.0
+       Fresh zerofrom-derive v0.1.6
+       Fresh yoke-derive v0.8.1
+       Fresh serde v1.0.228
+       Fresh getrandom v0.3.4
+       Fresh generic-array v0.14.7
+       Fresh socket2 v0.6.2
+       Fresh mio v1.1.1
+       Fresh untrusted v0.9.0
+       Fresh rand_core v0.6.4
+       Fresh zerofrom v0.1.6
+       Fresh tokio v1.49.0
+       Fresh ring v0.17.14
+       Fresh utf8_iter v1.0.4
+       Fresh percent-encoding v2.3.2
+       Fresh rand_core v0.9.5
+       Fresh crypto-common v0.1.7
+       Fresh yoke v0.8.1
+       Fresh form_urlencoded v1.2.2
+       Fresh rustls-webpki v0.103.9
+       Fresh zmij v1.0.21
+       Fresh rand_chacha v0.3.1
+       Fresh block-buffer v0.10.4
+       Fresh memchr v2.8.0
+       Fresh zerovec v0.11.5
+       Fresh zerotrie v0.2.3
+       Fresh slab v0.4.12
+       Fresh futures-task v0.3.32
+       Fresh subtle v2.6.1
+       Fresh futures-sink v0.3.32
+       Fresh futures-core v0.3.32
+       Fresh arrayvec v0.7.6
+       Fresh serde_json v1.0.149
+       Fresh tinystr v0.8.2
+       Fresh potential_utf v0.1.4
+       Fresh hex-conservative v0.2.2
+       Fresh rustls v0.23.37
+       Fresh futures-util v0.3.32
+       Fresh secp256k1-sys v0.10.1
+       Fresh rand v0.8.5
+       Fresh digest v0.10.7
+       Fresh bitcoin-io v0.1.4
+       Fresh icu_locale_core v2.1.1
+       Fresh icu_collections v2.1.1
+       Fresh rand_chacha v0.9.0
+       Fresh thiserror-impl v2.0.18
+       Fresh cpufeatures v0.2.17
+       Fresh httparse v1.10.1
+       Fresh bitcoin_hashes v0.14.1
+       Fresh secp256k1 v0.29.1
+       Fresh webpki-roots v1.0.6
+       Fresh http v1.4.0
+       Fresh icu_provider v2.1.1
+       Fresh sha1 v0.10.6
+       Fresh rand v0.9.2
+       Fresh thiserror v2.0.18
+       Fresh thiserror-impl v1.0.69
+       Fresh hex v0.4.3
+       Fresh data-encoding v2.10.0
+       Fresh log v0.4.29
+       Fresh utf-8 v0.7.6
+       Fresh bech32 v0.11.1
+       Fresh icu_properties v2.1.2
+       Fresh icu_normalizer v2.1.1
+       Fresh thiserror v1.0.69
+       Fresh tungstenite v0.26.2
+       Fresh webpki-roots v0.26.11
+       Fresh tokio-rustls v0.26.4
+       Fresh either v1.15.0
+       Fresh tracing-core v0.1.36
+       Fresh lru v0.16.3
+       Fresh async-utility v0.3.1
+       Fresh idna_adapter v1.2.1
+       Fresh tokio-socks v0.5.2
+       Fresh tokio-tungstenite v0.26.2
+       Fresh tracing v0.1.44
+       Fresh errno v0.3.14
+       Fresh negentropy v0.5.0
+       Fresh atomic-destructor v0.3.0
+       Fresh option-ext v0.2.0
+       Fresh bitflags v2.11.0
+       Fresh fastrand v2.3.0
+       Fresh idna v1.1.0
+       Fresh rustix v1.1.4
+       Fresh dirs-sys v0.5.0
+       Fresh agcli v0.4.0
+       Fresh jiff v0.2.21
+       Fresh url v2.5.8
+       Fresh tempfile v3.26.0
+       Fresh dirs v6.0.0
+       Fresh nostr v0.44.2
+       Fresh async-wsocket v0.13.1
+       Fresh nostr-database v0.44.0
+       Fresh nostr-gossip v0.44.0
+       Fresh nostr-relay-pool v0.44.0
+       Fresh nostr-sdk v0.44.1
+       Dirty wokhei v0.2.1 (/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp): the file `src/keys.rs` has changed (1772080714.596277296s, 1s after last build at 1772080713.532219057s)
+   Compiling wokhei v0.2.1 (/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp)
+     Running `/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/rustc --crate-name wokhei --edition=2021 src/main.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=043fd7f3f50b7521 -C extra-filename=-7fe993250a80ef5b --out-dir /private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/deps -C incremental=/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/incremental -L dependency=/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/deps --extern agcli=/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/deps/libagcli-5b14ad417b5928c6.rlib --extern dirs=/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/deps/libdirs-495c1a4ed2ca8e8b.rlib --extern jiff=/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/deps/libjiff-e8e94d1422c1435e.rlib --extern nostr_sdk=/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/deps/libnostr_sdk-1b55b50bdb4b8b8b.rlib --extern serde_json=/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/deps/libserde_json-a64d77ec668d29e4.rlib --extern tempfile=/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/deps/libtempfile-6b512ffa8728b6bb.rlib --extern thiserror=/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/deps/libthiserror-3a772c191ac82041.rlib --extern tokio=/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/deps/libtokio-2865d0c4e6394768.rlib -L native=/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/build/secp256k1-sys-cd79cc74f7451b94/out -L native=/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/build/ring-94ddd2e9fa9641e2/out`
+warning: unused variable: `source`
+   --> src/keys.rs:115:27
+    |
+115 | fn read_nsec<R: io::Read>(source: &str, stdin: R) -> Result<String, CommandError> {
+    |                           ^^^^^^ help: if this is intentional, prefix it with an underscore: `_source`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `stdin`
+   --> src/keys.rs:115:41
+    |
+115 | fn read_nsec<R: io::Read>(source: &str, stdin: R) -> Result<String, CommandError> {
+    |                                         ^^^^^ help: if this is intentional, prefix it with an underscore: `_stdin`
+
+warning: `wokhei` (bin "wokhei" test) generated 2 warnings (run `cargo fix --bin "wokhei" -p wokhei --tests` to apply 2 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.76s
+  Executable `/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/deps/wokhei-7fe993250a80ef5b`
+
+*** result: Success
+
+*** /Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo test --verbose --package=wokhei@0.2.1
+       Fresh unicode-ident v1.0.24
+       Fresh cfg-if v1.0.4
+       Fresh find-msvc-tools v0.1.9
+       Fresh shlex v1.3.0
+       Fresh stable_deref_trait v1.2.1
+       Fresh litemap v0.8.1
+       Fresh proc-macro2 v1.0.106
+       Fresh cc v1.2.56
+       Fresh writeable v0.6.2
+       Fresh quote v1.0.44
+       Fresh libc v0.2.182
+       Fresh zerocopy v0.8.39
+       Fresh serde_core v1.0.228
+       Fresh version_check v0.9.5
+       Fresh itoa v1.0.17
+       Fresh syn v2.0.117
+       Fresh getrandom v0.2.17
+       Fresh ppv-lite86 v0.2.21
+       Fresh pin-project-lite v0.2.16
+       Fresh bytes v1.11.1
+       Fresh zeroize v1.8.2
+       Fresh icu_normalizer_data v2.1.1
+       Fresh typenum v1.19.0
+       Fresh synstructure v0.13.2
+       Fresh zerovec-derive v0.11.2
+       Fresh displaydoc v0.2.5
+       Fresh serde_derive v1.0.228
+       Fresh rustls-pki-types v1.14.0
+       Fresh icu_properties_data v2.1.2
+       Fresh once_cell v1.21.3
+       Fresh smallvec v1.15.1
+       Fresh tokio-macros v2.6.0
+       Fresh zerofrom-derive v0.1.6
+       Fresh yoke-derive v0.8.1
+       Fresh serde v1.0.228
+       Fresh getrandom v0.3.4
+       Fresh generic-array v0.14.7
+       Fresh socket2 v0.6.2
+       Fresh mio v1.1.1
+       Fresh untrusted v0.9.0
+       Fresh rand_core v0.6.4
+       Fresh zerofrom v0.1.6
+       Fresh tokio v1.49.0
+       Fresh ring v0.17.14
+       Fresh utf8_iter v1.0.4
+       Fresh percent-encoding v2.3.2
+       Fresh crypto-common v0.1.7
+       Fresh yoke v0.8.1
+       Fresh form_urlencoded v1.2.2
+       Fresh zmij v1.0.21
+       Fresh rustls-webpki v0.103.9
+       Fresh block-buffer v0.10.4
+       Fresh rand_core v0.9.5
+       Fresh rand_chacha v0.3.1
+       Fresh slab v0.4.12
+       Fresh zerovec v0.11.5
+       Fresh zerotrie v0.2.3
+       Fresh arrayvec v0.7.6
+       Fresh memchr v2.8.0
+       Fresh futures-core v0.3.32
+       Fresh subtle v2.6.1
+       Fresh futures-sink v0.3.32
+       Fresh futures-task v0.3.32
+       Fresh rand v0.8.5
+       Fresh tinystr v0.8.2
+       Fresh potential_utf v0.1.4
+       Fresh serde_json v1.0.149
+       Fresh futures-util v0.3.32
+       Fresh rustls v0.23.37
+       Fresh hex-conservative v0.2.2
+       Fresh rand_chacha v0.9.0
+       Fresh digest v0.10.7
+       Fresh bitcoin-io v0.1.4
+       Fresh icu_locale_core v2.1.1
+       Fresh icu_collections v2.1.1
+       Fresh secp256k1-sys v0.10.1
+       Fresh thiserror-impl v2.0.18
+       Fresh cpufeatures v0.2.17
+       Fresh bitcoin_hashes v0.14.1
+       Fresh rand v0.9.2
+       Fresh httparse v1.10.1
+       Fresh webpki-roots v1.0.6
+       Fresh thiserror-impl v1.0.69
+       Fresh icu_provider v2.1.1
+       Fresh thiserror v2.0.18
+       Fresh sha1 v0.10.6
+       Fresh secp256k1 v0.29.1
+       Fresh http v1.4.0
+       Fresh log v0.4.29
+       Fresh hex v0.4.3
+       Fresh utf-8 v0.7.6
+       Fresh data-encoding v2.10.0
+       Fresh bech32 v0.11.1
+       Fresh icu_normalizer v2.1.1
+       Fresh icu_properties v2.1.2
+       Fresh tungstenite v0.26.2
+       Fresh thiserror v1.0.69
+       Fresh webpki-roots v0.26.11
+       Fresh tokio-rustls v0.26.4
+       Fresh either v1.15.0
+       Fresh tracing-core v0.1.36
+       Fresh lru v0.16.3
+       Fresh async-utility v0.3.1
+       Fresh idna_adapter v1.2.1
+       Fresh tokio-socks v0.5.2
+       Fresh tokio-tungstenite v0.26.2
+       Fresh tracing v0.1.44
+       Fresh errno v0.3.14
+       Fresh atomic-destructor v0.3.0
+       Fresh bitflags v2.11.0
+       Fresh negentropy v0.5.0
+       Fresh option-ext v0.2.0
+       Fresh fastrand v2.3.0
+       Fresh idna v1.1.0
+       Fresh rustix v1.1.4
+       Fresh dirs-sys v0.5.0
+       Fresh agcli v0.4.0
+       Fresh jiff v0.2.21
+       Fresh url v2.5.8
+       Fresh tempfile v3.26.0
+       Fresh dirs v6.0.0
+       Fresh nostr v0.44.2
+       Fresh async-wsocket v0.13.1
+       Fresh nostr-database v0.44.0
+       Fresh nostr-gossip v0.44.0
+       Fresh nostr-relay-pool v0.44.0
+       Fresh nostr-sdk v0.44.1
+       Fresh wokhei v0.2.1 (/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp)
+warning: unused variable: `source`
+   --> src/keys.rs:115:27
+    |
+115 | fn read_nsec<R: io::Read>(source: &str, stdin: R) -> Result<String, CommandError> {
+    |                           ^^^^^^ help: if this is intentional, prefix it with an underscore: `_source`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `stdin`
+   --> src/keys.rs:115:41
+    |
+115 | fn read_nsec<R: io::Read>(source: &str, stdin: R) -> Result<String, CommandError> {
+    |                                         ^^^^^ help: if this is intentional, prefix it with an underscore: `_stdin`
+
+warning: `wokhei` (bin "wokhei" test) generated 2 warnings (run `cargo fix --bin "wokhei" -p wokhei --tests` to apply 2 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running `/private/var/folders/vs/2jym3s9d2y5gdg3xphkh_d8h0000gn/T/cargo-mutants-wokhei-0ZntOd.tmp/target/debug/deps/wokhei-7fe993250a80ef5b`
+
+running 99 tests
+test error::tests::code_header_missing_d_tag ... ok
+test error::tests::code_invalid_nsec ... ok
+test error::tests::code_invalid_coordinate ... ok
+test error::tests::code_io_error ... ok
+test error::tests::code_invalid_json ... ok
+test error::tests::code_invalid_event_id ... ok
+test error::tests::code_header_not_found ... ok
+test error::tests::code_keys_already_exist ... ok
+test error::tests::code_keys_not_found ... ok
+test error::tests::code_keys_save_failed ... ok
+test error::tests::code_no_results ... ok
+test error::tests::code_relay_rejected ... ok
+test error::tests::code_relay_unreachable ... ok
+test error::tests::command_error_from_app_error_preserves_code ... ok
+test error::tests::command_error_from_app_error_preserves_retryable ... ok
+test error::tests::command_error_from_app_error_preserves_message ... ok
+test error::tests::fix_keys_already_exist_contains_path ... ok
+test error::tests::fix_keys_not_found_suggests_init ... ok
+test error::tests::fix_relay_unreachable_contains_url ... ok
+test error::tests::fix_strings_are_all_non_empty ... ok
+test error::tests::non_relay_errors_are_not_retryable ... ok
+test error::tests::relay_unreachable_is_retryable ... ok
+test header::tests::custom_alt_text_overrides_default ... ok
+test header::tests::aliases_appended_to_names ... ok
+test header::tests::d_tag_adds_identifier ... ok
+test header::tests::description_absent_when_none ... ok
+test header::tests::description_present_when_set ... ok
+test header::tests::hashtags_generated_from_tags_list ... ok
+test header::tests::minimal_params_has_alt_tag_with_default ... ok
+test header::tests::minimal_params_has_client_tag ... ok
+test header::tests::minimal_params_has_names_tag ... ok
+test header::tests::minimal_params_has_title_tag ... ok
+test header::tests::no_d_tag_when_none ... ok
+test header::tests::recommended_fields_present ... ok
+test header::tests::required_fields_present ... ok
+test item::tests::build_item_tags_d_tag_absent ... ok
+test item::tests::build_item_tags_d_tag_present ... ok
+test item::tests::build_item_tags_fields_with_equals_become_tags ... ok
+test item::tests::build_item_tags_fields_without_equals_skipped ... ok
+test item::tests::build_item_tags_has_client ... ok
+test item::tests::build_item_tags_has_header_ref ... ok
+test item::tests::build_item_tags_has_resource ... ok
+test item::tests::build_item_tags_has_z_tag ... ok
+test item::tests::parse_coordinate_invalid_pubkey ... ok
+test item::tests::parse_coordinate_single_part ... ok
+test item::tests::parse_coordinate_too_few_parts ... ok
+test item::tests::validate_addressable_with_d_tag_ok ... ok
+test item::tests::validate_addressable_without_d_tag_errors ... ok
+test item::tests::validate_coordinate_only_ok ... ok
+test item::tests::validate_header_only_ok ... ok
+test item::tests::validate_neither_header_nor_coordinate_errors ... ok
+test item::tests::validate_non_addressable_without_d_tag_ok ... ok
+test keys::tests::init_neither_flag_errors ... ok
+test keys::tests::keys_dir_from_appends_wokhei ... ok
+test keys::tests::keys_path_from_appends_keys ... ok
+test keys::tests::post_init_actions_contains_pubkey ... ok
+test keys::tests::post_init_actions_contains_whoami ... ok
+test keys::tests::post_init_actions_non_empty ... ok
+test keys::tests::load_from_nonexistent_path_errors ... ok
+test keys::tests::read_nsec_from_stdin_cursor ... FAILED
+test item::tests::parse_coordinate_d_tag_with_colons_preserved ... ok
+test keys::tests::keys_result_contains_pubkey ... ok
+test keys::tests::keys_result_npub_starts_with_npub1 ... ok
+test keys::tests::keys_result_has_keys_path ... ok
+test item::tests::parse_coordinate_invalid_kind ... ok
+test keys::tests::read_nsec_from_file ... FAILED
+test keys::tests::read_nsec_nonexistent_file_errors ... FAILED
+test keys::tests::read_nsec_trims_whitespace ... FAILED
+test item::tests::parse_coordinate_valid ... ok
+test item::tests::parse_coordinate_empty_d_tag ... ok
+test keys::tests::save_sets_permissions_0600 ... ok
+test keys::tests::save_creates_directory_and_file ... ok
+test query::tests::event_to_json_basic_fields ... ok
+test query::tests::event_to_json_content_preserved ... ok
+test query::tests::event_to_json_d_tag_creates_coordinate ... ok
+test query::tests::event_to_json_description_extracted ... ok
+test query::tests::event_to_json_tags_array_structure ... ok
+test tests::bool_flag_absent_is_false ... ok
+test tests::bool_flag_equals_true_works ... ok
+test tests::parse_csv_empty_string_returns_empty ... ok
+test tests::bool_flag_bare_is_true ... ok
+test tests::parse_csv_multiple_values ... ok
+test tests::parse_csv_none_returns_empty ... ok
+test tests::bool_flag_invalid_value_errors ... ok
+test tests::parse_csv_single_value ... ok
+test tests::parse_csv_trims_whitespace ... ok
+test query::tests::event_to_json_names_tag_extracts_name_and_aliases ... ok
+test tests::resolve_relay_default_fallback ... ok
+test tests::resolve_relay_env_var ... ok
+test tests::resolve_relay_flag_override ... ok
+test tests::resolve_relay_flag_beats_env ... ok
+test keys::tests::save_and_load_roundtrip ... ok
+test tests::usize_flag_absent_returns_default ... ok
+test tests::usize_flag_valid_number ... ok
+test tests::usize_flag_invalid_errors ... ok
+test tests::usize_flag_zero_works ... ok
+test query::tests::event_to_json_single_name_no_aliases ... ok
+test query::tests::event_to_json_title_extracted ... ok
+test query::tests::event_to_json_unknown_tags_dont_pollute_top_level ... ok
+
+failures:
+
+---- keys::tests::read_nsec_from_stdin_cursor stdout ----
+
+thread 'keys::tests::read_nsec_from_stdin_cursor' (5412166) panicked at src/keys.rs:269:9:
+assertion `left == right` failed
+  left: ""
+ right: "nsec1test"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- keys::tests::read_nsec_from_file stdout ----
+
+thread 'keys::tests::read_nsec_from_file' (5412165) panicked at src/keys.rs:286:9:
+assertion `left == right` failed
+  left: ""
+ right: "nsec1fromfile"
+
+---- keys::tests::read_nsec_nonexistent_file_errors stdout ----
+
+thread 'keys::tests::read_nsec_nonexistent_file_errors' (5412167) panicked at src/keys.rs:292:67:
+called `Result::unwrap_err()` on an `Ok` value: ""
+
+---- keys::tests::read_nsec_trims_whitespace stdout ----
+
+thread 'keys::tests::read_nsec_trims_whitespace' (5412168) panicked at src/keys.rs:276:9:
+assertion `left == right` failed
+  left: ""
+ right: "nsec1spaced"
+
+
+failures:
+    keys::tests::read_nsec_from_file
+    keys::tests::read_nsec_from_stdin_cursor
+    keys::tests::read_nsec_nonexistent_file_errors
+    keys::tests::read_nsec_trims_whitespace
+
+test result: FAILED. 95 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p wokhei --bin wokhei`
+
+*** result: Failure(101)

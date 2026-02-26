@@ -1,0 +1,30 @@
+--- src/main.rs
++++ replace parse_usize_flag -> Result<usize, CommandError> with Ok(1)
+@@ -38,26 +38,17 @@
+ }
+ 
+ /// Parse a usize flag with a default. Invalid values return error.
+ fn parse_usize_flag(
+     req: &CommandRequest<'_>,
+     name: &str,
+     default: usize,
+ ) -> Result<usize, CommandError> {
+-    match req.flag(name) {
+-        None => Ok(default),
+-        Some(v) => v.parse().map_err(|_| {
+-            CommandError::new(
+-                format!("--{name} must be a positive integer, got: {v}"),
+-                "INVALID_ARGS",
+-                format!("Provide a valid number for --{name}"),
+-            )
+-        }),
+-    }
++    Ok(1) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Resolve relay URL from --relay flag, `WOKHEI_RELAY` env var, or default.
+ fn resolve_relay(req: &CommandRequest<'_>) -> String {
+     req.flag("relay")
+         .map(String::from)
+         .or_else(|| std::env::var("WOKHEI_RELAY").ok())
+         .unwrap_or_else(|| "ws://localhost:7777".to_string())

@@ -1,0 +1,21 @@
+--- src/error.rs
++++ replace AppError::retryable -> bool with false
+@@ -58,17 +58,17 @@
+             Self::KeysAlreadyExist { .. } => "KEYS_ALREADY_EXIST",
+             Self::InvalidCoordinate { .. } => "INVALID_COORDINATE",
+             Self::Io { .. } => "IO_ERROR",
+             Self::InvalidJson { .. } => "INVALID_JSON",
+         }
+     }
+ 
+     pub fn retryable(&self) -> bool {
+-        matches!(self, Self::RelayUnreachable { .. })
++        false /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn fix(&self) -> String {
+         match self {
+             Self::KeysNotFound { .. } => {
+                 "Run `wokhei init --generate` to create a new keypair".to_string()
+             }
+             Self::RelayUnreachable { url } => {

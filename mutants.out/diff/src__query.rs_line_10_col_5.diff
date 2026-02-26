@@ -1,0 +1,67 @@
+--- src/query.rs
++++ replace event_to_json -> serde_json::Value with Default::default()
+@@ -2,63 +2,17 @@
+ use serde_json::json;
+ use std::time::Duration;
+ 
+ use agcli::{CommandError, CommandOutput, NextAction};
+ 
+ use crate::error::AppError;
+ 
+ fn event_to_json(event: &Event) -> serde_json::Value {
+-    let tags: Vec<Vec<String>> = event
+-        .tags
+-        .iter()
+-        .map(|t| t.as_slice().iter().map(ToString::to_string).collect())
+-        .collect();
+-
+-    let mut obj = json!({
+-        "event_id": event.id.to_hex(),
+-        "kind": event.kind.as_u16(),
+-        "pubkey": event.pubkey.to_hex(),
+-        "created_at": event.created_at.as_secs(),
+-        "tags": tags,
+-        "content": event.content,
+-        "sig": event.sig.to_string(),
+-    });
+-
+-    // Extract common DCoSL fields from tags for convenience
+-    for tag in event.tags.iter() {
+-        let parts = tag.as_slice();
+-        if parts.len() >= 2 {
+-            let key = parts[0].as_str();
+-            match key {
+-                "names" => {
+-                    let names: Vec<&str> = parts[1..].iter().map(String::as_str).collect();
+-                    obj["name"] = json!(names.first().unwrap_or(&""));
+-                    if names.len() > 1 {
+-                        obj["aliases"] = json!(&names[1..]);
+-                    }
+-                }
+-                "title" => {
+-                    obj["title"] = json!(parts[1].as_str());
+-                }
+-                "description" => {
+-                    obj["description"] = json!(parts[1].as_str());
+-                }
+-                "d" => {
+-                    let pubkey_hex = event.pubkey.to_hex();
+-                    let d_val = parts[1].as_str();
+-                    obj["coordinate"] =
+-                        json!(format!("{}:{}:{}", event.kind.as_u16(), pubkey_hex, d_val));
+-                }
+-                _ => {}
+-            }
+-        }
+-    }
+-
+-    obj
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     fn make_event(kind: Kind, content: &str, tags: Vec<Tag>) -> Event {
+         let keys = Keys::generate();

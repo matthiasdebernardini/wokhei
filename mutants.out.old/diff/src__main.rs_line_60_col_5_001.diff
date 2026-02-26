@@ -1,0 +1,24 @@
+--- src/main.rs
++++ replace resolve_relay -> String with String::new()
+@@ -52,20 +52,17 @@
+                 format!("Provide a valid number for --{name}"),
+             )
+         }),
+     }
+ }
+ 
+ /// Resolve relay URL from --relay flag, `WOKHEI_RELAY` env var, or default.
+ fn resolve_relay(req: &CommandRequest<'_>) -> String {
+-    req.flag("relay")
+-        .map(String::from)
+-        .or_else(|| std::env::var("WOKHEI_RELAY").ok())
+-        .unwrap_or_else(|| "ws://localhost:7777".to_string())
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ---------------------------------------------------------------------------
+ // Command builders
+ // ---------------------------------------------------------------------------
+ 
+ fn init_command() -> Command {
+     Command::new(

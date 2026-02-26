@@ -1,0 +1,43 @@
+timeout_multiplier = 3.0
+
+# Exclude async network functions and CLI wiring that can't be unit tested
+exclude_re = [
+  # Async network functions (full replacement)
+  "replace create_header ->",
+  "replace add_item ->",
+  "replace resolve_header_ref ->",
+  "replace resolve_header_by_id ->",
+  "replace list_headers ->",
+  "replace list_items ->",
+  "replace fetch_items_by_coordinate",
+  "replace fetch_all_items",
+  "replace fetch_coordinate_items",
+  "replace connect_client ->",
+  "replace inspect ->",
+  "replace delete ->",
+  "replace publish ->",
+  "replace main with",
+  # Command builders (CLI wiring)
+  "_command ->",
+  # Delegation wrappers (just call _from/_at variants)
+  "replace init ->",
+  "replace whoami ->",
+  "replace load_keys ->",
+  "replace save_keys ->",
+  "replace keys_exist ->",
+  "replace keys_path ->",
+  "replace home_base ->",
+  "replace read_nsec_from_source ->",
+  "replace read_json_input ->",
+  # Interior mutants in network functions
+  "in read_json_input",
+  "in publish$",
+  "in resolve_header_by_id",
+  "in fetch_items_by_coordinate",
+  "in fetch_all_items",
+  "in fetch_coordinate_items",
+  "in inspect$",
+  "in create_header$",
+  "in list_items_command",
+  "in init_command",
+]

@@ -1,0 +1,3460 @@
+{
+  "outcomes": [
+    {
+      "scenario": "Baseline",
+      "summary": "Success",
+      "log_path": "log/baseline.log",
+      "diff_path": null,
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 14.583859875,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.424430167,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/query.rs",
+          "function": {
+            "function_name": "event_to_json",
+            "return_type": "-> serde_json::Value",
+            "span": {
+              "start": {
+                "line": 9,
+                "column": 1
+              },
+              "end": {
+                "line": 57,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 32,
+              "column": 17
+            },
+            "end": {
+              "line": 38,
+              "column": 18
+            }
+          },
+          "replacement": "",
+          "genre": "MatchArm"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__query.rs_line_32_col_17.log",
+      "diff_path": "diff/src__query.rs_line_32_col_17.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.972986542,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.384673417,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/keys.rs",
+          "function": {
+            "function_name": "save_keys_at",
+            "return_type": "-> Result<(), AppError>",
+            "span": {
+              "start": {
+                "line": 52,
+                "column": 1
+              },
+              "end": {
+                "line": 82,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 53,
+              "column": 5
+            },
+            "end": {
+              "line": 81,
+              "column": 11
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__keys.rs_line_53_col_5.log",
+      "diff_path": "diff/src__keys.rs_line_53_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.074368209,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.3775975,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/item.rs",
+          "function": {
+            "function_name": "validate_item_params",
+            "return_type": "-> Result<(), CommandError>",
+            "span": {
+              "start": {
+                "line": 138,
+                "column": 1
+              },
+              "end": {
+                "line": 154,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 146,
+              "column": 27
+            },
+            "end": {
+              "line": 146,
+              "column": 29
+            }
+          },
+          "replacement": "||",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__item.rs_line_146_col_27.log",
+      "diff_path": "diff/src__item.rs_line_146_col_27.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.7655465,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.433343916,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/query.rs",
+          "function": {
+            "function_name": "event_to_json",
+            "return_type": "-> serde_json::Value",
+            "span": {
+              "start": {
+                "line": 9,
+                "column": 1
+              },
+              "end": {
+                "line": 57,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 10,
+              "column": 5
+            },
+            "end": {
+              "line": 56,
+              "column": 8
+            }
+          },
+          "replacement": "Default::default()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__query.rs_line_10_col_5.log",
+      "diff_path": "diff/src__query.rs_line_10_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.081729583,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.380362208,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/error.rs",
+          "function": {
+            "function_name": "AppError::retryable",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 65,
+                "column": 5
+              },
+              "end": {
+                "line": 67,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 66,
+              "column": 9
+            },
+            "end": {
+              "line": 66,
+              "column": 54
+            }
+          },
+          "replacement": "false",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__error.rs_line_66_col_9.log",
+      "diff_path": "diff/src__error.rs_line_66_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.135691458,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.486525125,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/keys.rs",
+          "function": {
+            "function_name": "post_init_actions",
+            "return_type": "-> Vec<NextAction>",
+            "span": {
+              "start": {
+                "line": 101,
+                "column": 1
+              },
+              "end": {
+                "line": 113,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 102,
+              "column": 5
+            },
+            "end": {
+              "line": 112,
+              "column": 6
+            }
+          },
+          "replacement": "vec![]",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__keys.rs_line_102_col_5.log",
+      "diff_path": "diff/src__keys.rs_line_102_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.714101834,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.385076833,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/error.rs",
+          "function": {
+            "function_name": "<impl From<AppError> for CommandError>::from",
+            "return_type": "-> Self",
+            "span": {
+              "start": {
+                "line": 112,
+                "column": 5
+              },
+              "end": {
+                "line": 114,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 113,
+              "column": 9
+            },
+            "end": {
+              "line": 113,
+              "column": 93
+            }
+          },
+          "replacement": "Default::default()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/src__error.rs_line_113_col_9.log",
+      "diff_path": "diff/src__error.rs_line_113_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.419772458,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/query.rs",
+          "function": {
+            "function_name": "event_to_json",
+            "return_type": "-> serde_json::Value",
+            "span": {
+              "start": {
+                "line": 9,
+                "column": 1
+              },
+              "end": {
+                "line": 57,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 39,
+              "column": 17
+            },
+            "end": {
+              "line": 41,
+              "column": 18
+            }
+          },
+          "replacement": "",
+          "genre": "MatchArm"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__query.rs_line_39_col_17.log",
+      "diff_path": "diff/src__query.rs_line_39_col_17.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.910907542,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.424116542,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/error.rs",
+          "function": {
+            "function_name": "AppError::code",
+            "return_type": "-> &'static str",
+            "span": {
+              "start": {
+                "line": 47,
+                "column": 5
+              },
+              "end": {
+                "line": 63,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 48,
+              "column": 9
+            },
+            "end": {
+              "line": 62,
+              "column": 10
+            }
+          },
+          "replacement": "\"\"",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__error.rs_line_48_col_9.log",
+      "diff_path": "diff/src__error.rs_line_48_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.920403542,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.378413417,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/main.rs",
+          "function": {
+            "function_name": "parse_usize_flag",
+            "return_type": "-> Result<usize, CommandError>",
+            "span": {
+              "start": {
+                "line": 40,
+                "column": 1
+              },
+              "end": {
+                "line": 56,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 46,
+              "column": 5
+            },
+            "end": {
+              "line": 55,
+              "column": 6
+            }
+          },
+          "replacement": "Ok(1)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__main.rs_line_46_col_5.log",
+      "diff_path": "diff/src__main.rs_line_46_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.76782325,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.384828583,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/keys.rs",
+          "function": {
+            "function_name": "read_nsec",
+            "return_type": "-> Result<String, CommandError>",
+            "span": {
+              "start": {
+                "line": 115,
+                "column": 1
+              },
+              "end": {
+                "line": 133,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 116,
+              "column": 5
+            },
+            "end": {
+              "line": 132,
+              "column": 31
+            }
+          },
+          "replacement": "Ok(String::new())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__keys.rs_line_116_col_5.log",
+      "diff_path": "diff/src__keys.rs_line_116_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.811028875,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.382904917,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/query.rs",
+          "function": {
+            "function_name": "event_to_json",
+            "return_type": "-> serde_json::Value",
+            "span": {
+              "start": {
+                "line": 9,
+                "column": 1
+              },
+              "end": {
+                "line": 57,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 42,
+              "column": 17
+            },
+            "end": {
+              "line": 44,
+              "column": 18
+            }
+          },
+          "replacement": "",
+          "genre": "MatchArm"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__query.rs_line_42_col_17.log",
+      "diff_path": "diff/src__query.rs_line_42_col_17.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.966704791,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.428133,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/item.rs",
+          "function": {
+            "function_name": "parse_coordinate_str",
+            "return_type": "-> Result<(u16, PublicKey, String), AppError>",
+            "span": {
+              "start": {
+                "line": 10,
+                "column": 1
+              },
+              "end": {
+                "line": 25,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 12,
+              "column": 20
+            },
+            "end": {
+              "line": 12,
+              "column": 22
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__item.rs_line_12_col_20.log",
+      "diff_path": "diff/src__item.rs_line_12_col_20.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.918291667,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.373245375,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/keys.rs",
+          "function": {
+            "function_name": "keys_path_from",
+            "return_type": "-> PathBuf",
+            "span": {
+              "start": {
+                "line": 19,
+                "column": 1
+              },
+              "end": {
+                "line": 21,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 20,
+              "column": 5
+            },
+            "end": {
+              "line": 20,
+              "column": 37
+            }
+          },
+          "replacement": "Default::default()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__keys.rs_line_20_col_5.log",
+      "diff_path": "diff/src__keys.rs_line_20_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.758476916,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.481676875,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/keys.rs",
+          "function": {
+            "function_name": "read_nsec",
+            "return_type": "-> Result<String, CommandError>",
+            "span": {
+              "start": {
+                "line": 115,
+                "column": 1
+              },
+              "end": {
+                "line": 133,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 116,
+              "column": 5
+            },
+            "end": {
+              "line": 132,
+              "column": 31
+            }
+          },
+          "replacement": "Ok(\"xyzzy\".into())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__keys.rs_line_116_col_5_001.log",
+      "diff_path": "diff/src__keys.rs_line_116_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.75869775,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.381322875,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/keys.rs",
+          "function": {
+            "function_name": "load_keys_from",
+            "return_type": "-> Result<Keys, AppError>",
+            "span": {
+              "start": {
+                "line": 35,
+                "column": 1
+              },
+              "end": {
+                "line": 46,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 37,
+              "column": 8
+            },
+            "end": {
+              "line": 37,
+              "column": 9
+            }
+          },
+          "replacement": "",
+          "genre": "UnaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__keys.rs_line_37_col_8.log",
+      "diff_path": "diff/src__keys.rs_line_37_col_8.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.804976458,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.433010542,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/error.rs",
+          "function": {
+            "function_name": "AppError::retryable",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 65,
+                "column": 5
+              },
+              "end": {
+                "line": 67,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 66,
+              "column": 9
+            },
+            "end": {
+              "line": 66,
+              "column": 54
+            }
+          },
+          "replacement": "true",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__error.rs_line_66_col_9_001.log",
+      "diff_path": "diff/src__error.rs_line_66_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.649458584,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.431116375,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/item.rs",
+          "function": {
+            "function_name": "validate_item_params",
+            "return_type": "-> Result<(), CommandError>",
+            "span": {
+              "start": {
+                "line": 138,
+                "column": 1
+              },
+              "end": {
+                "line": 154,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 139,
+              "column": 5
+            },
+            "end": {
+              "line": 153,
+              "column": 11
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__item.rs_line_139_col_5.log",
+      "diff_path": "diff/src__item.rs_line_139_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.914236166,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.382212084,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/keys.rs",
+          "function": {
+            "function_name": "init",
+            "return_type": "-> Result<CommandOutput, CommandError>",
+            "span": {
+              "start": {
+                "line": 139,
+                "column": 1
+              },
+              "end": {
+                "line": 182,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 140,
+              "column": 8
+            },
+            "end": {
+              "line": 140,
+              "column": 9
+            }
+          },
+          "replacement": "",
+          "genre": "UnaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__keys.rs_line_140_col_8.log",
+      "diff_path": "diff/src__keys.rs_line_140_col_8.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.869694625,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.43268025,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/main.rs",
+          "function": {
+            "function_name": "parse_csv",
+            "return_type": "-> Vec<String>",
+            "span": {
+              "start": {
+                "line": 32,
+                "column": 1
+              },
+              "end": {
+                "line": 38,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 35,
+              "column": 20
+            },
+            "end": {
+              "line": 35,
+              "column": 33
+            }
+          },
+          "replacement": "false",
+          "genre": "MatchArmGuard"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__main.rs_line_35_col_20.log",
+      "diff_path": "diff/src__main.rs_line_35_col_20.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.862719583,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.433446333,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/keys.rs",
+          "function": {
+            "function_name": "load_keys_from",
+            "return_type": "-> Result<Keys, AppError>",
+            "span": {
+              "start": {
+                "line": 35,
+                "column": 1
+              },
+              "end": {
+                "line": 46,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 36,
+              "column": 5
+            },
+            "end": {
+              "line": 45,
+              "column": 64
+            }
+          },
+          "replacement": "Ok(Default::default())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/src__keys.rs_line_36_col_5.log",
+      "diff_path": "diff/src__keys.rs_line_36_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.438482292,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/main.rs",
+          "function": {
+            "function_name": "parse_csv",
+            "return_type": "-> Vec<String>",
+            "span": {
+              "start": {
+                "line": 32,
+                "column": 1
+              },
+              "end": {
+                "line": 38,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 35,
+              "column": 20
+            },
+            "end": {
+              "line": 35,
+              "column": 33
+            }
+          },
+          "replacement": "true",
+          "genre": "MatchArmGuard"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__main.rs_line_35_col_20_001.log",
+      "diff_path": "diff/src__main.rs_line_35_col_20_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.743811833,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.380202417,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/query.rs",
+          "function": {
+            "function_name": "event_to_json",
+            "return_type": "-> serde_json::Value",
+            "span": {
+              "start": {
+                "line": 9,
+                "column": 1
+              },
+              "end": {
+                "line": 57,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 45,
+              "column": 17
+            },
+            "end": {
+              "line": 50,
+              "column": 18
+            }
+          },
+          "replacement": "",
+          "genre": "MatchArm"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__query.rs_line_45_col_17.log",
+      "diff_path": "diff/src__query.rs_line_45_col_17.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.919993833,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.425240167,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/header.rs",
+          "function": {
+            "function_name": "build_header_tags",
+            "return_type": "-> Vec<Tag>",
+            "span": {
+              "start": {
+                "line": 22,
+                "column": 1
+              },
+              "end": {
+                "line": 72,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 23,
+              "column": 5
+            },
+            "end": {
+              "line": 71,
+              "column": 15
+            }
+          },
+          "replacement": "vec![Default::default()]",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/src__header.rs_line_23_col_5.log",
+      "diff_path": "diff/src__header.rs_line_23_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.534963833,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/main.rs",
+          "function": {
+            "function_name": "parse_csv",
+            "return_type": "-> Vec<String>",
+            "span": {
+              "start": {
+                "line": 32,
+                "column": 1
+              },
+              "end": {
+                "line": 38,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 34,
+              "column": 5
+            },
+            "end": {
+              "line": 37,
+              "column": 6
+            }
+          },
+          "replacement": "vec![\"xyzzy\".into()]",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__main.rs_line_34_col_5.log",
+      "diff_path": "diff/src__main.rs_line_34_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.080099,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.433509875,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/main.rs",
+          "function": {
+            "function_name": "parse_csv",
+            "return_type": "-> Vec<String>",
+            "span": {
+              "start": {
+                "line": 32,
+                "column": 1
+              },
+              "end": {
+                "line": 38,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 34,
+              "column": 5
+            },
+            "end": {
+              "line": 37,
+              "column": 6
+            }
+          },
+          "replacement": "vec![]",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__main.rs_line_34_col_5_001.log",
+      "diff_path": "diff/src__main.rs_line_34_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.697634792,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.420967167,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/item.rs",
+          "function": {
+            "function_name": "parse_coordinate_str",
+            "return_type": "-> Result<(u16, PublicKey, String), AppError>",
+            "span": {
+              "start": {
+                "line": 10,
+                "column": 1
+              },
+              "end": {
+                "line": 25,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 11,
+              "column": 5
+            },
+            "end": {
+              "line": 24,
+              "column": 34
+            }
+          },
+          "replacement": "Ok((1, Default::default(), String::new()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/src__item.rs_line_11_col_5.log",
+      "diff_path": "diff/src__item.rs_line_11_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.490282209,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/item.rs",
+          "function": {
+            "function_name": "parse_coordinate_str",
+            "return_type": "-> Result<(u16, PublicKey, String), AppError>",
+            "span": {
+              "start": {
+                "line": 10,
+                "column": 1
+              },
+              "end": {
+                "line": 25,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 11,
+              "column": 5
+            },
+            "end": {
+              "line": 24,
+              "column": 34
+            }
+          },
+          "replacement": "Ok((0, Default::default(), String::new()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/src__item.rs_line_11_col_5_001.log",
+      "diff_path": "diff/src__item.rs_line_11_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.488632209,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/keys.rs",
+          "function": {
+            "function_name": "read_nsec",
+            "return_type": "-> Result<String, CommandError>",
+            "span": {
+              "start": {
+                "line": 115,
+                "column": 1
+              },
+              "end": {
+                "line": 133,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 116,
+              "column": 25
+            },
+            "end": {
+              "line": 116,
+              "column": 27
+            }
+          },
+          "replacement": "!=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__keys.rs_line_116_col_25.log",
+      "diff_path": "diff/src__keys.rs_line_116_col_25.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.900787125,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.433486084,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/keys.rs",
+          "function": {
+            "function_name": "post_init_actions",
+            "return_type": "-> Vec<NextAction>",
+            "span": {
+              "start": {
+                "line": 101,
+                "column": 1
+              },
+              "end": {
+                "line": 113,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 102,
+              "column": 5
+            },
+            "end": {
+              "line": 112,
+              "column": 6
+            }
+          },
+          "replacement": "vec![Default::default()]",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/src__keys.rs_line_102_col_5_001.log",
+      "diff_path": "diff/src__keys.rs_line_102_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.432798666,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/error.rs",
+          "function": {
+            "function_name": "AppError::fix",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 69,
+                "column": 5
+              },
+              "end": {
+                "line": 108,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 70,
+              "column": 9
+            },
+            "end": {
+              "line": 107,
+              "column": 10
+            }
+          },
+          "replacement": "\"xyzzy\".into()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__error.rs_line_70_col_9.log",
+      "diff_path": "diff/src__error.rs_line_70_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.700659291,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.38367575,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/main.rs",
+          "function": {
+            "function_name": "resolve_relay",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 58,
+                "column": 1
+              },
+              "end": {
+                "line": 64,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 60,
+              "column": 5
+            },
+            "end": {
+              "line": 63,
+              "column": 62
+            }
+          },
+          "replacement": "\"xyzzy\".into()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__main.rs_line_60_col_5.log",
+      "diff_path": "diff/src__main.rs_line_60_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.024247625,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.437738625,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/query.rs",
+          "function": {
+            "function_name": "event_to_json",
+            "return_type": "-> serde_json::Value",
+            "span": {
+              "start": {
+                "line": 9,
+                "column": 1
+              },
+              "end": {
+                "line": 57,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 35,
+              "column": 36
+            },
+            "end": {
+              "line": 35,
+              "column": 37
+            }
+          },
+          "replacement": "<",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__query.rs_line_35_col_36.log",
+      "diff_path": "diff/src__query.rs_line_35_col_36.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.918873125,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.383269167,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/query.rs",
+          "function": {
+            "function_name": "event_to_json",
+            "return_type": "-> serde_json::Value",
+            "span": {
+              "start": {
+                "line": 9,
+                "column": 1
+              },
+              "end": {
+                "line": 57,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 29,
+              "column": 24
+            },
+            "end": {
+              "line": 29,
+              "column": 26
+            }
+          },
+          "replacement": "<",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__query.rs_line_29_col_24.log",
+      "diff_path": "diff/src__query.rs_line_29_col_24.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.80834275,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.429075708,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/item.rs",
+          "function": {
+            "function_name": "parse_coordinate_str",
+            "return_type": "-> Result<(u16, PublicKey, String), AppError>",
+            "span": {
+              "start": {
+                "line": 10,
+                "column": 1
+              },
+              "end": {
+                "line": 25,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 11,
+              "column": 5
+            },
+            "end": {
+              "line": 24,
+              "column": 34
+            }
+          },
+          "replacement": "Ok((1, Default::default(), \"xyzzy\".into()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/src__item.rs_line_11_col_5_002.log",
+      "diff_path": "diff/src__item.rs_line_11_col_5_002.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.488028792,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/main.rs",
+          "function": {
+            "function_name": "parse_bool_flag",
+            "return_type": "-> Result<bool, CommandError>",
+            "span": {
+              "start": {
+                "line": 19,
+                "column": 1
+              },
+              "end": {
+                "line": 30,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 21,
+              "column": 5
+            },
+            "end": {
+              "line": 29,
+              "column": 6
+            }
+          },
+          "replacement": "Ok(true)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__main.rs_line_21_col_5.log",
+      "diff_path": "diff/src__main.rs_line_21_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.754495709,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.37966225,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/query.rs",
+          "function": {
+            "function_name": "event_to_json",
+            "return_type": "-> serde_json::Value",
+            "span": {
+              "start": {
+                "line": 9,
+                "column": 1
+              },
+              "end": {
+                "line": 57,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 35,
+              "column": 36
+            },
+            "end": {
+              "line": 35,
+              "column": 37
+            }
+          },
+          "replacement": ">=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__query.rs_line_35_col_36_001.log",
+      "diff_path": "diff/src__query.rs_line_35_col_36_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.858526333,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.434545125,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/main.rs",
+          "function": {
+            "function_name": "parse_bool_flag",
+            "return_type": "-> Result<bool, CommandError>",
+            "span": {
+              "start": {
+                "line": 19,
+                "column": 1
+              },
+              "end": {
+                "line": 30,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 21,
+              "column": 5
+            },
+            "end": {
+              "line": 29,
+              "column": 6
+            }
+          },
+          "replacement": "Ok(false)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__main.rs_line_21_col_5_001.log",
+      "diff_path": "diff/src__main.rs_line_21_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.81228375,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.438271792,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/main.rs",
+          "function": {
+            "function_name": "parse_csv",
+            "return_type": "-> Vec<String>",
+            "span": {
+              "start": {
+                "line": 32,
+                "column": 1
+              },
+              "end": {
+                "line": 38,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 34,
+              "column": 5
+            },
+            "end": {
+              "line": 37,
+              "column": 6
+            }
+          },
+          "replacement": "vec![String::new()]",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__main.rs_line_34_col_5_002.log",
+      "diff_path": "diff/src__main.rs_line_34_col_5_002.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.921511417,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.434427167,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/item.rs",
+          "function": {
+            "function_name": "build_item_tags",
+            "return_type": "-> Vec<Tag>",
+            "span": {
+              "start": {
+                "line": 113,
+                "column": 1
+              },
+              "end": {
+                "line": 136,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 120,
+              "column": 5
+            },
+            "end": {
+              "line": 135,
+              "column": 15
+            }
+          },
+          "replacement": "vec![]",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__item.rs_line_120_col_5.log",
+      "diff_path": "diff/src__item.rs_line_120_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.070199958,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.436953125,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/header.rs",
+          "function": {
+            "function_name": "build_header_tags",
+            "return_type": "-> Vec<Tag>",
+            "span": {
+              "start": {
+                "line": 22,
+                "column": 1
+              },
+              "end": {
+                "line": 72,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 46,
+              "column": 8
+            },
+            "end": {
+              "line": 46,
+              "column": 9
+            }
+          },
+          "replacement": "",
+          "genre": "UnaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__header.rs_line_46_col_8.log",
+      "diff_path": "diff/src__header.rs_line_46_col_8.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.906877084,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.378220625,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/item.rs",
+          "function": {
+            "function_name": "build_item_tags",
+            "return_type": "-> Vec<Tag>",
+            "span": {
+              "start": {
+                "line": 113,
+                "column": 1
+              },
+              "end": {
+                "line": 136,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 120,
+              "column": 5
+            },
+            "end": {
+              "line": 135,
+              "column": 15
+            }
+          },
+          "replacement": "vec![Default::default()]",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/src__item.rs_line_120_col_5_001.log",
+      "diff_path": "diff/src__item.rs_line_120_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.480530042,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/keys.rs",
+          "function": {
+            "function_name": "keys_result",
+            "return_type": "-> serde_json::Value",
+            "span": {
+              "start": {
+                "line": 88,
+                "column": 1
+              },
+              "end": {
+                "line": 99,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 89,
+              "column": 5
+            },
+            "end": {
+              "line": 98,
+              "column": 7
+            }
+          },
+          "replacement": "Default::default()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__keys.rs_line_89_col_5.log",
+      "diff_path": "diff/src__keys.rs_line_89_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.751744958,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.378233583,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/main.rs",
+          "function": {
+            "function_name": "parse_usize_flag",
+            "return_type": "-> Result<usize, CommandError>",
+            "span": {
+              "start": {
+                "line": 40,
+                "column": 1
+              },
+              "end": {
+                "line": 56,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 46,
+              "column": 5
+            },
+            "end": {
+              "line": 55,
+              "column": 6
+            }
+          },
+          "replacement": "Ok(0)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__main.rs_line_46_col_5_001.log",
+      "diff_path": "diff/src__main.rs_line_46_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.876272875,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.434006083,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/keys.rs",
+          "function": {
+            "function_name": "init",
+            "return_type": "-> Result<CommandOutput, CommandError>",
+            "span": {
+              "start": {
+                "line": 139,
+                "column": 1
+              },
+              "end": {
+                "line": 182,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 140,
+              "column": 18
+            },
+            "end": {
+              "line": 140,
+              "column": 20
+            }
+          },
+          "replacement": "||",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/src__keys.rs_line_140_col_18.log",
+      "diff_path": "diff/src__keys.rs_line_140_col_18.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.800268834,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.384333167,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/error.rs",
+          "function": {
+            "function_name": "AppError::code",
+            "return_type": "-> &'static str",
+            "span": {
+              "start": {
+                "line": 47,
+                "column": 5
+              },
+              "end": {
+                "line": 63,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 48,
+              "column": 9
+            },
+            "end": {
+              "line": 62,
+              "column": 10
+            }
+          },
+          "replacement": "\"xyzzy\"",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__error.rs_line_48_col_9_001.log",
+      "diff_path": "diff/src__error.rs_line_48_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.7599585,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.382265583,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/query.rs",
+          "function": {
+            "function_name": "event_to_json",
+            "return_type": "-> serde_json::Value",
+            "span": {
+              "start": {
+                "line": 9,
+                "column": 1
+              },
+              "end": {
+                "line": 57,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 35,
+              "column": 36
+            },
+            "end": {
+              "line": 35,
+              "column": 37
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__query.rs_line_35_col_36_002.log",
+      "diff_path": "diff/src__query.rs_line_35_col_36_002.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.806032916,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.430120125,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/header.rs",
+          "function": {
+            "function_name": "build_header_tags",
+            "return_type": "-> Vec<Tag>",
+            "span": {
+              "start": {
+                "line": 22,
+                "column": 1
+              },
+              "end": {
+                "line": 72,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 23,
+              "column": 5
+            },
+            "end": {
+              "line": 71,
+              "column": 15
+            }
+          },
+          "replacement": "vec![]",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__header.rs_line_23_col_5_001.log",
+      "diff_path": "diff/src__header.rs_line_23_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.969636583,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.43376825,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/item.rs",
+          "function": {
+            "function_name": "validate_item_params",
+            "return_type": "-> Result<(), CommandError>",
+            "span": {
+              "start": {
+                "line": 138,
+                "column": 1
+              },
+              "end": {
+                "line": 154,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 139,
+              "column": 32
+            },
+            "end": {
+              "line": 139,
+              "column": 34
+            }
+          },
+          "replacement": "||",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__item.rs_line_139_col_32.log",
+      "diff_path": "diff/src__item.rs_line_139_col_32.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.919573291,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.385441583,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/keys.rs",
+          "function": {
+            "function_name": "keys_dir_from",
+            "return_type": "-> PathBuf",
+            "span": {
+              "start": {
+                "line": 15,
+                "column": 1
+              },
+              "end": {
+                "line": 17,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 16,
+              "column": 5
+            },
+            "end": {
+              "line": 16,
+              "column": 25
+            }
+          },
+          "replacement": "Default::default()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__keys.rs_line_16_col_5.log",
+      "diff_path": "diff/src__keys.rs_line_16_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.742309375,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.435795083,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/main.rs",
+          "function": {
+            "function_name": "parse_csv",
+            "return_type": "-> Vec<String>",
+            "span": {
+              "start": {
+                "line": 32,
+                "column": 1
+              },
+              "end": {
+                "line": 38,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 35,
+              "column": 20
+            },
+            "end": {
+              "line": 35,
+              "column": 21
+            }
+          },
+          "replacement": "",
+          "genre": "UnaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__main.rs_line_35_col_20_002.log",
+      "diff_path": "diff/src__main.rs_line_35_col_20_002.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.753138083,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.383782875,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/error.rs",
+          "function": {
+            "function_name": "AppError::fix",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 69,
+                "column": 5
+              },
+              "end": {
+                "line": 108,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 70,
+              "column": 9
+            },
+            "end": {
+              "line": 107,
+              "column": 10
+            }
+          },
+          "replacement": "String::new()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__error.rs_line_70_col_9_001.log",
+      "diff_path": "diff/src__error.rs_line_70_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.74347525,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.430410375,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/item.rs",
+          "function": {
+            "function_name": "parse_coordinate_str",
+            "return_type": "-> Result<(u16, PublicKey, String), AppError>",
+            "span": {
+              "start": {
+                "line": 10,
+                "column": 1
+              },
+              "end": {
+                "line": 25,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 11,
+              "column": 5
+            },
+            "end": {
+              "line": 24,
+              "column": 34
+            }
+          },
+          "replacement": "Ok((0, Default::default(), \"xyzzy\".into()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/src__item.rs_line_11_col_5_003.log",
+      "diff_path": "diff/src__item.rs_line_11_col_5_003.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.482725792,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/header.rs",
+          "function": {
+            "function_name": "build_header_tags",
+            "return_type": "-> Vec<Tag>",
+            "span": {
+              "start": {
+                "line": 22,
+                "column": 1
+              },
+              "end": {
+                "line": 72,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 49,
+              "column": 8
+            },
+            "end": {
+              "line": 49,
+              "column": 9
+            }
+          },
+          "replacement": "",
+          "genre": "UnaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__header.rs_line_49_col_8.log",
+      "diff_path": "diff/src__header.rs_line_49_col_8.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.748606208,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.380090708,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "package": "wokhei",
+          "file": "src/main.rs",
+          "function": {
+            "function_name": "resolve_relay",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 58,
+                "column": 1
+              },
+              "end": {
+                "line": 64,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 60,
+              "column": 5
+            },
+            "end": {
+              "line": 63,
+              "column": 62
+            }
+          },
+          "replacement": "String::new()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/src__main.rs_line_60_col_5_001.log",
+      "diff_path": "diff/src__main.rs_line_60_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.924371375,
+          "process_status": "Success",
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.436072875,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/Users/matthiasdebernardini/.rustup/toolchains/1.93.1-aarch64-apple-darwin/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=wokhei@0.2.1"
+          ]
+        }
+      ]
+    }
+  ],
+  "total_mutants": 55,
+  "missed": 1,
+  "caught": 45,
+  "timeout": 0,
+  "unviable": 9,
+  "success": 0
+}

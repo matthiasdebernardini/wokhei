@@ -1,0 +1,31 @@
+--- src/keys.rs
++++ replace post_init_actions -> Vec<NextAction> with vec![]
+@@ -94,27 +94,17 @@
+     json!({
+         "pubkey": pubkey_hex,
+         "npub": npub,
+         "keys_path": keys_path().display().to_string()
+     })
+ }
+ 
+ fn post_init_actions(pubkey_hex: &str) -> Vec<NextAction> {
+-    vec![
+-        NextAction::new("wokhei whoami", "Verify your identity"),
+-        NextAction::new(
+-            "wokhei create-header --name=<name> --title=<title>",
+-            "Create your first list header",
+-        ),
+-        NextAction::new(
+-            format!("wokhei list-headers --author={pubkey_hex}"),
+-            "List your headers",
+-        ),
+-    ]
++    vec![] /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn read_nsec<R: io::Read>(source: &str, stdin: R) -> Result<String, CommandError> {
+     let raw = if source == "-" {
+         let mut buf = String::new();
+         let mut reader = stdin;
+         reader.read_to_string(&mut buf).map_err(|e| {
+             CommandError::from(AppError::Io {

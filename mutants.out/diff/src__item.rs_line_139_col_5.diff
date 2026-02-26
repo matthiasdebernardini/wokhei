@@ -1,0 +1,35 @@
+--- src/item.rs
++++ replace validate_item_params -> Result<(), CommandError> with Ok(())
+@@ -131,31 +131,17 @@
+     if let Some(d) = d_tag {
+         event_tags.push(Tag::identifier(d));
+     }
+ 
+     event_tags
+ }
+ 
+ fn validate_item_params(params: &ItemParams) -> Result<(), CommandError> {
+-    if params.header.is_none() && params.header_coordinate.is_none() {
+-        return Err(CommandError::new(
+-            "Specify --header=<event-id> or --header-coordinate=<kind:pubkey:d-tag>",
+-            "MISSING_ARG",
+-            "Use --header with an event ID, or --header-coordinate with kind:pubkey:d-tag",
+-        ));
+-    }
+-    if params.addressable && params.d_tag.is_none() {
+-        return Err(CommandError::new(
+-            "--addressable requires --d-tag=<identifier>",
+-            "MISSING_ARG",
+-            "Add --d-tag=<identifier> when using --addressable",
+-        ));
+-    }
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     // -----------------------------------------------------------------------
+     // parse_coordinate_str

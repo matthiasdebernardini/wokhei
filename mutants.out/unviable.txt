@@ -1,0 +1,9 @@
+src/error.rs:113:9: replace <impl From<AppError> for CommandError>::from -> Self with Default::default()
+src/item.rs:11:5: replace parse_coordinate_str -> Result<(u16, PublicKey, String), AppError> with Ok((0, Default::default(), String::new()))
+src/item.rs:11:5: replace parse_coordinate_str -> Result<(u16, PublicKey, String), AppError> with Ok((0, Default::default(), "xyzzy".into()))
+src/keys.rs:102:5: replace post_init_actions -> Vec<NextAction> with vec![Default::default()]
+src/item.rs:120:5: replace build_item_tags -> Vec<Tag> with vec![Default::default()]
+src/keys.rs:36:5: replace load_keys_from -> Result<Keys, AppError> with Ok(Default::default())
+src/item.rs:11:5: replace parse_coordinate_str -> Result<(u16, PublicKey, String), AppError> with Ok((1, Default::default(), "xyzzy".into()))
+src/item.rs:11:5: replace parse_coordinate_str -> Result<(u16, PublicKey, String), AppError> with Ok((1, Default::default(), String::new()))
+src/header.rs:23:5: replace build_header_tags -> Vec<Tag> with vec![Default::default()]

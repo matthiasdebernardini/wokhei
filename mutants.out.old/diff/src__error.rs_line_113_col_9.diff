@@ -1,0 +1,21 @@
+--- src/error.rs
++++ replace <impl From<AppError> for CommandError>::from -> Self with Default::default()
+@@ -105,17 +105,17 @@
+                 "Provide valid JSON input".to_string()
+             }
+         }
+     }
+ }
+ 
+ impl From<AppError> for CommandError {
+     fn from(err: AppError) -> Self {
+-        CommandError::new(err.to_string(), err.code(), err.fix()).retryable(err.retryable())
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     // -----------------------------------------------------------------------

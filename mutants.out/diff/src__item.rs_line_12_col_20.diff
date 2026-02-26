@@ -1,0 +1,21 @@
+--- src/item.rs
++++ replace != with == in parse_coordinate_str
+@@ -4,17 +4,17 @@
+ 
+ use agcli::{CommandError, CommandOutput, NextAction};
+ 
+ use crate::error::AppError;
+ use crate::keys::load_keys;
+ 
+ fn parse_coordinate_str(input: &str) -> Result<(u16, PublicKey, String), AppError> {
+     let parts: Vec<&str> = input.splitn(3, ':').collect();
+-    if parts.len() != 3 {
++    if parts.len() == /* ~ changed by cargo-mutants ~ */ 3 {
+         return Err(AppError::InvalidCoordinate {
+             input: input.to_string(),
+         });
+     }
+     let kind_num: u16 = parts[0].parse().map_err(|_| AppError::InvalidCoordinate {
+         input: input.to_string(),
+     })?;
+     let pubkey = PublicKey::parse(parts[1]).map_err(|_| AppError::InvalidCoordinate {

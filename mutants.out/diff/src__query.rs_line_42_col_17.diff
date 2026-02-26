@@ -1,0 +1,23 @@
+--- src/query.rs
++++ delete match arm "description" in event_to_json
+@@ -34,19 +34,17 @@
+                     obj["name"] = json!(names.first().unwrap_or(&""));
+                     if names.len() > 1 {
+                         obj["aliases"] = json!(&names[1..]);
+                     }
+                 }
+                 "title" => {
+                     obj["title"] = json!(parts[1].as_str());
+                 }
+-                "description" => {
+-                    obj["description"] = json!(parts[1].as_str());
+-                }
++                 /* ~ changed by cargo-mutants ~ */
+                 "d" => {
+                     let pubkey_hex = event.pubkey.to_hex();
+                     let d_val = parts[1].as_str();
+                     obj["coordinate"] =
+                         json!(format!("{}:{}:{}", event.kind.as_u16(), pubkey_hex, d_val));
+                 }
+                 _ => {}
+             }

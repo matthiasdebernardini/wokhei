@@ -1,0 +1,27 @@
+--- src/query.rs
++++ delete match arm "names" in event_to_json
+@@ -24,23 +24,17 @@
+     });
+ 
+     // Extract common DCoSL fields from tags for convenience
+     for tag in event.tags.iter() {
+         let parts = tag.as_slice();
+         if parts.len() >= 2 {
+             let key = parts[0].as_str();
+             match key {
+-                "names" => {
+-                    let names: Vec<&str> = parts[1..].iter().map(String::as_str).collect();
+-                    obj["name"] = json!(names.first().unwrap_or(&""));
+-                    if names.len() > 1 {
+-                        obj["aliases"] = json!(&names[1..]);
+-                    }
+-                }
++                 /* ~ changed by cargo-mutants ~ */
+                 "title" => {
+                     obj["title"] = json!(parts[1].as_str());
+                 }
+                 "description" => {
+                     obj["description"] = json!(parts[1].as_str());
+                 }
+                 "d" => {
+                     let pubkey_hex = event.pubkey.to_hex();

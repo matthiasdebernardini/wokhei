@@ -1,0 +1,46 @@
+src/main.rs:34:5: replace parse_csv -> Vec<String> with vec![]
+src/main.rs:60:5: replace resolve_relay -> String with "xyzzy".into()
+src/query.rs:42:17: delete match arm "description" in event_to_json
+src/query.rs:10:5: replace event_to_json -> serde_json::Value with Default::default()
+src/main.rs:34:5: replace parse_csv -> Vec<String> with vec!["xyzzy".into()]
+src/keys.rs:116:25: replace == with != in read_nsec
+src/keys.rs:116:5: replace read_nsec -> Result<String, CommandError> with Ok(String::new())
+src/main.rs:21:5: replace parse_bool_flag -> Result<bool, CommandError> with Ok(false)
+src/header.rs:23:5: replace build_header_tags -> Vec<Tag> with vec![]
+src/header.rs:49:8: delete ! in build_header_tags
+src/keys.rs:37:8: delete ! in load_keys_from
+src/item.rs:120:5: replace build_item_tags -> Vec<Tag> with vec![]
+src/main.rs:60:5: replace resolve_relay -> String with String::new()
+src/item.rs:139:5: replace validate_item_params -> Result<(), CommandError> with Ok(())
+src/main.rs:34:5: replace parse_csv -> Vec<String> with vec![String::new()]
+src/query.rs:32:17: delete match arm "names" in event_to_json
+src/main.rs:46:5: replace parse_usize_flag -> Result<usize, CommandError> with Ok(0)
+src/main.rs:46:5: replace parse_usize_flag -> Result<usize, CommandError> with Ok(1)
+src/error.rs:48:9: replace AppError::code -> &'static str with ""
+src/item.rs:12:20: replace != with == in parse_coordinate_str
+src/query.rs:35:36: replace > with < in event_to_json
+src/main.rs:35:20: delete ! in parse_csv
+src/main.rs:21:5: replace parse_bool_flag -> Result<bool, CommandError> with Ok(true)
+src/query.rs:35:36: replace > with == in event_to_json
+src/error.rs:48:9: replace AppError::code -> &'static str with "xyzzy"
+src/query.rs:45:17: delete match arm "d" in event_to_json
+src/main.rs:35:20: replace match guard !s.is_empty() with false in parse_csv
+src/keys.rs:20:5: replace keys_path_from -> PathBuf with Default::default()
+src/keys.rs:102:5: replace post_init_actions -> Vec<NextAction> with vec![]
+src/keys.rs:140:8: delete ! in init
+src/error.rs:70:9: replace AppError::fix -> String with String::new()
+src/query.rs:35:36: replace > with >= in event_to_json
+src/keys.rs:16:5: replace keys_dir_from -> PathBuf with Default::default()
+src/keys.rs:140:18: replace && with || in init
+src/main.rs:35:20: replace match guard !s.is_empty() with true in parse_csv
+src/error.rs:66:9: replace AppError::retryable -> bool with false
+src/query.rs:39:17: delete match arm "title" in event_to_json
+src/item.rs:146:27: replace && with || in validate_item_params
+src/error.rs:70:9: replace AppError::fix -> String with "xyzzy".into()
+src/keys.rs:89:5: replace keys_result -> serde_json::Value with Default::default()
+src/header.rs:46:8: delete ! in build_header_tags
+src/error.rs:66:9: replace AppError::retryable -> bool with true
+src/query.rs:29:24: replace >= with < in event_to_json
+src/item.rs:139:32: replace && with || in validate_item_params
+src/keys.rs:116:5: replace read_nsec -> Result<String, CommandError> with Ok("xyzzy".into())
+src/keys.rs:53:5: replace save_keys_at -> Result<(), AppError> with Ok(())

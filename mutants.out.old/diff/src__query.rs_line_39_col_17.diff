@@ -1,0 +1,23 @@
+--- src/query.rs
++++ delete match arm "title" in event_to_json
+@@ -31,19 +31,17 @@
+             match key {
+                 "names" => {
+                     let names: Vec<&str> = parts[1..].iter().map(String::as_str).collect();
+                     obj["name"] = json!(names.first().unwrap_or(&""));
+                     if names.len() > 1 {
+                         obj["aliases"] = json!(&names[1..]);
+                     }
+                 }
+-                "title" => {
+-                    obj["title"] = json!(parts[1].as_str());
+-                }
++                 /* ~ changed by cargo-mutants ~ */
+                 "description" => {
+                     obj["description"] = json!(parts[1].as_str());
+                 }
+                 "d" => {
+                     let pubkey_hex = event.pubkey.to_hex();
+                     let d_val = parts[1].as_str();
+                     obj["coordinate"] =
+                         json!(format!("{}:{}:{}", event.kind.as_u16(), pubkey_hex, d_val));

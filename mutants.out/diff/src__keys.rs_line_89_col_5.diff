@@ -1,0 +1,30 @@
+--- src/keys.rs
++++ replace keys_result -> serde_json::Value with Default::default()
+@@ -81,26 +81,17 @@
+     Ok(())
+ }
+ 
+ fn save_keys(keys: &Keys) -> Result<(), AppError> {
+     save_keys_at(&home_base(), keys)
+ }
+ 
+ fn keys_result(keys: &Keys) -> serde_json::Value {
+-    let pubkey_hex = keys.public_key().to_hex();
+-    let npub = keys
+-        .public_key()
+-        .to_bech32()
+-        .unwrap_or_else(|_| pubkey_hex.clone());
+-    json!({
+-        "pubkey": pubkey_hex,
+-        "npub": npub,
+-        "keys_path": keys_path().display().to_string()
+-    })
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn post_init_actions(pubkey_hex: &str) -> Vec<NextAction> {
+     vec![
+         NextAction::new("wokhei whoami", "Verify your identity"),
+         NextAction::new(
+             "wokhei create-header --name=<name> --title=<title>",
+             "Create your first list header",

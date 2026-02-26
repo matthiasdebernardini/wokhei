@@ -1,0 +1,37 @@
+--- src/keys.rs
++++ replace read_nsec -> Result<String, CommandError> with Ok("xyzzy".into())
+@@ -108,33 +108,17 @@
+         NextAction::new(
+             format!("wokhei list-headers --author={pubkey_hex}"),
+             "List your headers",
+         ),
+     ]
+ }
+ 
+ fn read_nsec<R: io::Read>(source: &str, stdin: R) -> Result<String, CommandError> {
+-    let raw = if source == "-" {
+-        let mut buf = String::new();
+-        let mut reader = stdin;
+-        reader.read_to_string(&mut buf).map_err(|e| {
+-            CommandError::from(AppError::Io {
+-                reason: e.to_string(),
+-            })
+-        })?;
+-        buf
+-    } else {
+-        fs::read_to_string(source).map_err(|e| {
+-            CommandError::from(AppError::Io {
+-                reason: format!("Failed to read {source}: {e}"),
+-            })
+-        })?
+-    };
+-    Ok(raw.trim().to_string())
++    Ok("xyzzy".into()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn read_nsec_from_source(source: &str) -> Result<String, CommandError> {
+     read_nsec(source, io::stdin())
+ }
+ 
+ pub fn init(generate: bool, import: Option<&str>) -> Result<CommandOutput, CommandError> {
+     if !generate && import.is_none() {

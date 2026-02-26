@@ -1,0 +1,21 @@
+--- src/header.rs
++++ delete ! in build_header_tags
+@@ -41,17 +41,17 @@
+     event_tags.push(Tag::custom(TagKind::custom("title"), [title.clone()]));
+ 
+     if let Some(desc) = description {
+         event_tags.push(Tag::custom(TagKind::custom("description"), [desc.clone()]));
+     }
+     if !required.is_empty() {
+         event_tags.push(Tag::custom(TagKind::custom("required"), required.clone()));
+     }
+-    if !recommended.is_empty() {
++    if  /* ~ changed by cargo-mutants ~ */recommended.is_empty() {
+         event_tags.push(Tag::custom(
+             TagKind::custom("recommended"),
+             recommended.clone(),
+         ));
+     }
+     for tag in tags_list {
+         event_tags.push(Tag::hashtag(tag));
+     }

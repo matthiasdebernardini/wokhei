@@ -1,0 +1,49 @@
+--- src/keys.rs
++++ replace save_keys_at -> Result<(), AppError> with Ok(())
+@@ -45,45 +45,17 @@
+     Keys::parse(nsec.trim()).map_err(|_| AppError::InvalidNsec)
+ }
+ 
+ pub fn load_keys() -> Result<Keys, AppError> {
+     load_keys_from(&home_base())
+ }
+ 
+ fn save_keys_at(base: &Path, keys: &Keys) -> Result<(), AppError> {
+-    let dir = keys_dir_from(base);
+-    fs::create_dir_all(&dir).map_err(|e| AppError::KeysSaveFailed {
+-        reason: e.to_string(),
+-    })?;
+-
+-    let path = keys_path_from(base);
+-    let nsec = keys
+-        .secret_key()
+-        .to_bech32()
+-        .map_err(|e| AppError::KeysSaveFailed {
+-            reason: e.to_string(),
+-        })?;
+-
+-    fs::write(&path, &nsec).map_err(|e| AppError::KeysSaveFailed {
+-        reason: e.to_string(),
+-    })?;
+-
+-    // chmod 0600
+-    #[cfg(unix)]
+-    {
+-        use std::os::unix::fs::PermissionsExt;
+-        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).map_err(|e| {
+-            AppError::KeysSaveFailed {
+-                reason: e.to_string(),
+-            }
+-        })?;
+-    }
+-
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn save_keys(keys: &Keys) -> Result<(), AppError> {
+     save_keys_at(&home_base(), keys)
+ }
+ 
+ fn keys_result(keys: &Keys) -> serde_json::Value {
+     let pubkey_hex = keys.public_key().to_hex();

@@ -1,0 +1,21 @@
+--- src/item.rs
++++ replace && with || in validate_item_params
+@@ -138,17 +138,17 @@
+ fn validate_item_params(params: &ItemParams) -> Result<(), CommandError> {
+     if params.header.is_none() && params.header_coordinate.is_none() {
+         return Err(CommandError::new(
+             "Specify --header=<event-id> or --header-coordinate=<kind:pubkey:d-tag>",
+             "MISSING_ARG",
+             "Use --header with an event ID, or --header-coordinate with kind:pubkey:d-tag",
+         ));
+     }
+-    if params.addressable && params.d_tag.is_none() {
++    if params.addressable || /* ~ changed by cargo-mutants ~ */ params.d_tag.is_none() {
+         return Err(CommandError::new(
+             "--addressable requires --d-tag=<identifier>",
+             "MISSING_ARG",
+             "Add --d-tag=<identifier> when using --addressable",
+         ));
+     }
+     Ok(())
+ }

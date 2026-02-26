@@ -1,0 +1,21 @@
+--- src/keys.rs
++++ replace keys_dir_from -> PathBuf with Default::default()
+@@ -8,17 +8,17 @@
+ 
+ use crate::error::AppError;
+ 
+ // ---------------------------------------------------------------------------
+ // Parameterized path helpers (testable without touching $HOME)
+ // ---------------------------------------------------------------------------
+ 
+ fn keys_dir_from(base: &Path) -> PathBuf {
+-    base.join(".wokhei")
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn keys_path_from(base: &Path) -> PathBuf {
+     keys_dir_from(base).join("keys")
+ }
+ 
+ fn home_base() -> PathBuf {
+     dirs::home_dir().unwrap_or_else(|| PathBuf::from("."))

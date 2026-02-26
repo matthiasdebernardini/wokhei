@@ -1,0 +1,21 @@
+--- src/keys.rs
++++ replace == with != in read_nsec
+@@ -108,17 +108,17 @@
+         NextAction::new(
+             format!("wokhei list-headers --author={pubkey_hex}"),
+             "List your headers",
+         ),
+     ]
+ }
+ 
+ fn read_nsec<R: io::Read>(source: &str, stdin: R) -> Result<String, CommandError> {
+-    let raw = if source == "-" {
++    let raw = if source != /* ~ changed by cargo-mutants ~ */ "-" {
+         let mut buf = String::new();
+         let mut reader = stdin;
+         reader.read_to_string(&mut buf).map_err(|e| {
+             CommandError::from(AppError::Io {
+                 reason: e.to_string(),
+             })
+         })?;
+         buf

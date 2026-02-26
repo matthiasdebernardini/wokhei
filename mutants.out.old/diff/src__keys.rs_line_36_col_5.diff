@@ -1,0 +1,30 @@
+--- src/keys.rs
++++ replace load_keys_from -> Result<Keys, AppError> with Ok(Default::default())
+@@ -28,26 +28,17 @@
+     keys_path_from(&home_base())
+ }
+ 
+ pub fn keys_exist() -> bool {
+     keys_path().exists()
+ }
+ 
+ fn load_keys_from(base: &Path) -> Result<Keys, AppError> {
+-    let path = keys_path_from(base);
+-    if !path.exists() {
+-        return Err(AppError::KeysNotFound {
+-            path: path.display().to_string(),
+-        });
+-    }
+-    let nsec = fs::read_to_string(&path).map_err(|e| AppError::Io {
+-        reason: e.to_string(),
+-    })?;
+-    Keys::parse(nsec.trim()).map_err(|_| AppError::InvalidNsec)
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn load_keys() -> Result<Keys, AppError> {
+     load_keys_from(&home_base())
+ }
+ 
+ fn save_keys_at(base: &Path, keys: &Keys) -> Result<(), AppError> {
+     let dir = keys_dir_from(base);

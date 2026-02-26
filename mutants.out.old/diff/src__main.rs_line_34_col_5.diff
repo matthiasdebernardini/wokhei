@@ -1,0 +1,24 @@
+--- src/main.rs
++++ replace parse_csv -> Vec<String> with vec!["xyzzy".into()]
+@@ -26,20 +26,17 @@
+             "INVALID_ARGS",
+             format!("Use --{name} without a value, or remove it"),
+         )),
+     }
+ }
+ 
+ /// Parse comma-separated flag value into Vec<String>. Absent = empty vec.
+ fn parse_csv(flag_value: Option<&str>) -> Vec<String> {
+-    match flag_value {
+-        Some(s) if !s.is_empty() => s.split(',').map(|v| v.trim().to_string()).collect(),
+-        _ => Vec::new(),
+-    }
++    vec!["xyzzy".into()] /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Parse a usize flag with a default. Invalid values return error.
+ fn parse_usize_flag(
+     req: &CommandRequest<'_>,
+     name: &str,
+     default: usize,
+ ) -> Result<usize, CommandError> {
