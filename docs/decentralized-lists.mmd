@@ -1,0 +1,13 @@
+flowchart LR
+    A[List author] --> B[Create header\nkind 9998 or 39998]
+    B --> C{Addressable?}
+    C -->|No| D[z uses header event_id]
+    C -->|Yes| E[Header has d-tag\ncoordinate 39998:pubkey:d]
+
+    F[Contributor] --> G[Create item\nkind 9999 or 39999]
+    G --> H[Item has z tag]
+    H --> D
+    H --> E
+
+    I[Relay stores events] --> J[Consumers query #z]
+    J --> K[List membership emerges from z linkage]
