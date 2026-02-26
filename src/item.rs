@@ -126,11 +126,11 @@ fn build_item_tags(
     event_tags.push(Tag::custom(TagKind::custom("r"), [resource]));
     event_tags.push(Tag::custom(TagKind::custom("client"), ["wokhei"]));
 
-    for field in fields {
-        if let Some((key, val)) = field.split_once('=') {
-            event_tags.push(Tag::custom(TagKind::custom(key), [val]));
-        }
-    }
+    event_tags.extend(fields.iter().filter_map(|field| {
+        field
+            .split_once('=')
+            .map(|(key, val)| Tag::custom(TagKind::custom(key), [val]))
+    }));
 
     if let Some(d) = d_tag {
         event_tags.push(Tag::identifier(d));

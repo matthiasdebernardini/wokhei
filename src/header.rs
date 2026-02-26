@@ -50,12 +50,12 @@ fn build_header_tags(params: &HeaderParams) -> Vec<Tag> {
     if !required.is_empty() {
         event_tags.push(Tag::custom(TagKind::custom("required"), required.clone()));
     }
-    for field in recommended {
-        event_tags.push(Tag::custom(TagKind::custom("recommended"), [field.clone()]));
-    }
-    for tag in tags_list {
-        event_tags.push(Tag::hashtag(tag));
-    }
+    event_tags.extend(
+        recommended
+            .iter()
+            .map(|field| Tag::custom(TagKind::custom("recommended"), [field.clone()])),
+    );
+    event_tags.extend(tags_list.iter().map(Tag::hashtag));
 
     let alt_text = alt
         .clone()

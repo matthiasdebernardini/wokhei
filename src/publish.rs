@@ -51,22 +51,27 @@ pub async fn publish(relay: String, input: String) -> Result<CommandOutput, Comm
     let kind_num = raw["kind"].as_u64().unwrap_or(1) as u16;
     let content = raw["content"].as_str().unwrap_or("");
 
-    let mut event_tags: Vec<Tag> = Vec::new();
-    if let Some(tags_arr) = raw["tags"].as_array() {
-        for tag_val in tags_arr {
-            if let Some(tag_arr) = tag_val.as_array() {
-                let parts: Vec<String> = tag_arr
-                    .iter()
-                    .filter_map(|v| v.as_str().map(String::from))
-                    .collect();
-                if parts.len() >= 2 {
-                    let kind = TagKind::custom(&parts[0]);
-                    let values: Vec<&str> = parts[1..].iter().map(String::as_str).collect();
-                    event_tags.push(Tag::custom(kind, values));
-                }
-            }
-        }
-    }
+    let event_tags: Vec<Tag> = raw["tags"]
+        .as_array()
+        .map(|tags_arr| {
+            tags_arr
+                .iter()
+                .filter_map(|tag_val| {
+                    tag_val.as_array().and_then(|tag_arr| {
+                        let parts: Vec<String> = tag_arr
+                            .iter()
+                            .filter_map(|v| v.as_str().map(String::from))
+                            .collect();
+                        (parts.len() >= 2).then(|| {
+                            let kind = TagKind::custom(&parts[0]);
+                            let values: Vec<&str> = parts[1..].iter().map(String::as_str).collect();
+                            Tag::custom(kind, values)
+                        })
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
 
     let builder = EventBuilder::new(Kind::Custom(kind_num), content).tags(event_tags);
 

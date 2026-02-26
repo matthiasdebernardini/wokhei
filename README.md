@@ -4,6 +4,10 @@ Agent-first CLI for creating and publishing Decentralized List events on Nostr u
 
 Every command returns structured JSON with `next_actions` — no plain text ever.
 
+## Protocol
+
+- [Protocol](docs/protocol.md): NIP-01 + Decentralized Lists standards and how Wokhei implements them.
+
 ## Install
 
 ```bash

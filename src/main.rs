@@ -1,3 +1,7 @@
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static GLOBAL: agcli::Jemalloc = agcli::Jemalloc;
+
 mod delete;
 mod dtag;
 mod error;

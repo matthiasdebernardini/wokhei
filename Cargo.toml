@@ -14,7 +14,7 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 nostr-sdk = "0.44"
-agcli = "0.4"
+agcli = { version = "0.6", features = ["jemalloc"] }
 tokio = { version = "1", features = ["rt-multi-thread"] }
 serde_json = "1"
 thiserror = "2"
@@ -26,7 +26,7 @@ tempfile = "3"
 
 [profile.release]
 opt-level = 3
-lto = true
+lto = "thin"
 codegen-units = 1
 strip = true
 panic = "abort"

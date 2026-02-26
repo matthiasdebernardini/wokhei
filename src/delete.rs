@@ -17,12 +17,13 @@ pub async fn delete(
         )])
     })?;
 
-    let mut event_ids = Vec::new();
-    for id_str in &event_id_strs {
-        let id = EventId::parse(id_str)
-            .map_err(|_| CommandError::from(AppError::InvalidEventId { id: id_str.clone() }))?;
-        event_ids.push(id);
-    }
+    let event_ids: Vec<EventId> = event_id_strs
+        .iter()
+        .map(|id_str| {
+            EventId::parse(id_str)
+                .map_err(|_| CommandError::from(AppError::InvalidEventId { id: id_str.clone() }))
+        })
+        .collect::<Result<_, CommandError>>()?;
 
     let client = Client::builder().signer(keys).build();
     if client.add_relay(&relay).await.is_err() {

@@ -66,6 +66,13 @@ echo "nsec1..." | wokhei init --import=-
 echo "nsec1..." | wokhei init --import -
 ```
 
+Check current identity:
+```bash
+wokhei whoami
+```
+
+Returns `pubkey` (hex), `npub` (bech32), and the keys file path.
+
 ### 2. Create a List Header
 
 Regular (kind 9998):
@@ -93,6 +100,16 @@ wokhei add-item --header=<event-id> --resource="https://example.com/song" --fiel
 By coordinate (cross-relay, no lookup needed):
 ```bash
 wokhei add-item --header-coordinate="39998:<pubkey>:<d-tag>" --resource=jazz
+```
+
+With custom content and fields:
+```bash
+wokhei add-item --header=<event-id> --resource="https://example.com/song" --content='{"note":"great track"}' --fields="title=Kind of Blue,artist=Miles Davis"
+```
+
+Addressable item (kind 39999) — persists across updates, keyed by d-tag:
+```bash
+wokhei add-item --header-coordinate="39998:<pubkey>:<d-tag>" --resource="https://example.com" --addressable --d-tag=my-item-id
 ```
 
 ### 4. Query and Verify
@@ -139,7 +156,11 @@ wokhei export --relay=wss://dcosl.brainstorm.world
 ### 6. Delete (NIP-09)
 
 ```bash
+# Delete a single event
 wokhei delete <event-id>
+
+# Delete multiple events at once
+wokhei delete <event-id-1> <event-id-2> <event-id-3>
 ```
 
 **Caveat**: Deletion is a NIP-09 REQUEST — relays may or may not honor it.
@@ -175,6 +196,7 @@ wokhei delete <event-id>
 - For parent header kind `39998`: use coordinate `39998:<pubkey>:<d-tag>` in `z`
 - `wokhei add-item` derives `z` automatically from `--header` or `--header-coordinate`
 - `--z-tag` is intentionally unsupported
+
 ## Error Handling
 
 1. Check `ok` field — `true` means success
