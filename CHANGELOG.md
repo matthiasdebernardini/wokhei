@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2](https://github.com/matthiasdebernardini/wokhei/releases/tag/v0.2.2) - 2026-02-26
+
+### CI
+
+- Add release automation with git-cliff, justfile, and CD workflow ([02a4930](https://github.com/matthiasdebernardini/wokhei/commit/02a4930ac16f574582fb2327f89943b0dfc8fe82))
+
 ## [0.2.1](https://github.com/matthiasdebernardini/wokhei/releases/tag/v0.2.1) - 2026-02-26
 
 ### Bug Fixes
