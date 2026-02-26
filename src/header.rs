@@ -70,7 +70,7 @@ fn build_header_tags(params: &HeaderParams) -> Vec<Tag> {
     event_tags
 }
 
-pub async fn create_header(params: HeaderParams) -> Result<CommandOutput, CommandError> {
+pub async fn create_header(mut params: HeaderParams) -> Result<CommandOutput, CommandError> {
     let keys = load_keys().map_err(|e| {
         CommandError::from(e).next_actions(vec![NextAction::new(
             "wokhei init --generate",
@@ -79,14 +79,8 @@ pub async fn create_header(params: HeaderParams) -> Result<CommandOutput, Comman
     })?;
 
     if params.addressable && params.d_tag.is_none() {
-        return Err(CommandError::new(
-            "--addressable requires --d-tag=<identifier>",
-            "MISSING_ARG",
-            format!(
-                "Re-run with: wokhei create-header --relay={} --name={} --plural={} --addressable --d-tag=<identifier>",
-                params.relay, params.name, params.plural_name,
-            ),
-        ));
+        let pubkey_hex = keys.public_key().to_hex();
+        params.d_tag = Some(crate::dtag::header_dtag(&params.name, &pubkey_hex));
     }
 
     let kind = if params.addressable {
@@ -120,6 +114,7 @@ pub async fn create_header(params: HeaderParams) -> Result<CommandOutput, Comman
             });
 
             if let Some(ref d) = params.d_tag {
+                result["d_tag"] = json!(d);
                 let coord = format!("{}:{}:{}", kind.as_u16(), pubkey_hex, d);
                 result["coordinate"] = json!(coord);
             }

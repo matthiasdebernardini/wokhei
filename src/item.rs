@@ -147,13 +147,6 @@ fn validate_item_params(params: &ItemParams) -> Result<(), CommandError> {
             "Use --header with an event ID, or --header-coordinate with kind:pubkey:d-tag",
         ));
     }
-    if params.addressable && params.d_tag.is_none() {
-        return Err(CommandError::new(
-            "--addressable requires --d-tag=<identifier>",
-            "MISSING_ARG",
-            "Add --d-tag=<identifier> when using --addressable",
-        ));
-    }
     Ok(())
 }
 
@@ -202,6 +195,12 @@ pub async fn add_item(params: ItemParams) -> Result<CommandOutput, CommandError>
         )
         .await?;
 
+        let d_tag = if addressable && d_tag.is_none() {
+            Some(crate::dtag::item_dtag(&parent_z_ref, &resource))
+        } else {
+            d_tag
+        };
+
         let event_tags = build_item_tags(&parent_z_ref, &resource, &fields, d_tag.as_deref());
         let builder =
             EventBuilder::new(item_kind, content.as_deref().unwrap_or("")).tags(event_tags);
@@ -209,10 +208,13 @@ pub async fn add_item(params: ItemParams) -> Result<CommandOutput, CommandError>
         match client.send_event_builder(builder).await {
             Ok(output) => {
                 let event_id = output.val.to_hex();
-                let result = json!({
+                let mut result = json!({
                     "event_id": event_id, "kind": item_kind.as_u16(),
                     "header_ref": parent_z_ref, "resource": resource,
                 });
+                if let Some(ref d) = d_tag {
+                    result["d_tag"] = json!(d);
+                }
                 let coordinate_mode =
                     header_coordinate.is_some() || parent_z_ref.starts_with("39998:");
                 let header_flag = if coordinate_mode {
@@ -355,11 +357,10 @@ mod tests {
     }
 
     #[test]
-    fn validate_addressable_without_d_tag_errors() {
+    fn validate_addressable_without_d_tag_ok() {
         let mut p = base_params(Some("abc".into()), None);
         p.addressable = true;
-        let err = validate_item_params(&p).unwrap_err();
-        assert_eq!(err.code, "MISSING_ARG");
+        assert!(validate_item_params(&p).is_ok());
     }
 
     #[test]

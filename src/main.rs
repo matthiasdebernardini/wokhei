@@ -1,4 +1,5 @@
 mod delete;
+mod dtag;
 mod error;
 mod header;
 mod item;
@@ -121,7 +122,7 @@ fn whoami_command() -> Command {
 
 fn create_header_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
     Command::new("create-header", "Create a list header event (kind 9998 or 39998)")
-        .usage("wokhei create-header --name=<singular> --plural=<plural> [--titles=<singular,plural>] [--relay=<url>] [--description=<desc>] [--required=f1,f2] [--recommended=f1,f2] [--tags=t1,t2] [--alt=<text>] [--addressable --d-tag=<id>]")
+        .usage("wokhei create-header --name=<singular> --plural=<plural> [--titles=<singular,plural>] [--relay=<url>] [--description=<desc>] [--required=f1,f2] [--recommended=f1,f2] [--tags=t1,t2] [--alt=<text>] [--addressable [--d-tag=<id>]]")
         .handler(move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
             if req.flag("title").is_some() || req.flag("aliases").is_some() {
                 return Err(CommandError::new(
@@ -173,7 +174,7 @@ fn create_header_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
 
 fn add_item_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
     Command::new("add-item", "Add an item to a list (kind 9999 or 39999)")
-        .usage("wokhei add-item --header=<event-id> | --header-coordinate=<kind:pubkey:d-tag> --resource=<url> [--relay=<url>] [--content=<json>] [--fields=k=v,...] [--addressable --d-tag=<id>]")
+        .usage("wokhei add-item --header=<event-id> | --header-coordinate=<kind:pubkey:d-tag> --resource=<url> [--relay=<url>] [--content=<json>] [--fields=k=v,...] [--addressable [--d-tag=<id>]]")
         .handler(move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
             if req.flag("z-tag").is_some() {
                 return Err(CommandError::new(
