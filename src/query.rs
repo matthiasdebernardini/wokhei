@@ -388,3 +388,115 @@ pub async fn inspect(relay: String, event_id_str: String) -> Result<CommandOutpu
 
     Ok(CommandOutput::new(ev_json).next_actions(actions))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_event(kind: Kind, content: &str, tags: Vec<Tag>) -> Event {
+        let keys = Keys::generate();
+        EventBuilder::new(kind, content)
+            .tags(tags)
+            .sign_with_keys(&keys)
+            .unwrap()
+    }
+
+    #[test]
+    fn event_to_json_basic_fields() {
+        let event = make_event(Kind::Custom(9998), "hello", vec![]);
+        let j = event_to_json(&event);
+        assert!(j["event_id"].is_string());
+        assert_eq!(j["kind"], 9998);
+        assert!(j["pubkey"].is_string());
+        assert!(j["created_at"].is_number());
+        assert!(j["sig"].is_string());
+        assert_eq!(j["content"], "hello");
+        assert!(j["tags"].is_array());
+    }
+
+    #[test]
+    fn event_to_json_names_tag_extracts_name_and_aliases() {
+        let tags = vec![Tag::custom(
+            TagKind::custom("names"),
+            ["mylist", "alias1", "alias2"],
+        )];
+        let event = make_event(Kind::Custom(9998), "", tags);
+        let j = event_to_json(&event);
+        assert_eq!(j["name"], "mylist");
+        assert_eq!(j["aliases"], json!(["alias1", "alias2"]));
+    }
+
+    #[test]
+    fn event_to_json_single_name_no_aliases() {
+        let tags = vec![Tag::custom(TagKind::custom("names"), ["mylist"])];
+        let event = make_event(Kind::Custom(9998), "", tags);
+        let j = event_to_json(&event);
+        assert_eq!(j["name"], "mylist");
+        assert!(j.get("aliases").is_none());
+    }
+
+    #[test]
+    fn event_to_json_title_extracted() {
+        let tags = vec![Tag::custom(TagKind::custom("title"), ["My Title"])];
+        let event = make_event(Kind::Custom(9998), "", tags);
+        let j = event_to_json(&event);
+        assert_eq!(j["title"], "My Title");
+    }
+
+    #[test]
+    fn event_to_json_description_extracted() {
+        let tags = vec![Tag::custom(
+            TagKind::custom("description"),
+            ["A description"],
+        )];
+        let event = make_event(Kind::Custom(9998), "", tags);
+        let j = event_to_json(&event);
+        assert_eq!(j["description"], "A description");
+    }
+
+    #[test]
+    fn event_to_json_d_tag_creates_coordinate() {
+        let keys = Keys::generate();
+        let tags = vec![Tag::identifier("my-list")];
+        let event = EventBuilder::new(Kind::Custom(39998), "")
+            .tags(tags)
+            .sign_with_keys(&keys)
+            .unwrap();
+        let j = event_to_json(&event);
+        let coord = j["coordinate"].as_str().unwrap();
+        assert!(coord.starts_with("39998:"));
+        assert!(coord.ends_with(":my-list"));
+        assert!(coord.contains(&keys.public_key().to_hex()));
+    }
+
+    #[test]
+    fn event_to_json_unknown_tags_dont_pollute_top_level() {
+        let tags = vec![Tag::custom(TagKind::custom("weird"), ["val"])];
+        let event = make_event(Kind::Custom(9998), "", tags);
+        let j = event_to_json(&event);
+        assert!(j.get("weird").is_none());
+    }
+
+    #[test]
+    fn event_to_json_content_preserved() {
+        let event = make_event(Kind::Custom(9999), r#"{"key":"val"}"#, vec![]);
+        let j = event_to_json(&event);
+        assert_eq!(j["content"], r#"{"key":"val"}"#);
+    }
+
+    #[test]
+    fn event_to_json_tags_array_structure() {
+        let tags = vec![
+            Tag::custom(TagKind::custom("r"), ["https://example.com"]),
+            Tag::custom(TagKind::custom("z"), ["listItem"]),
+        ];
+        let event = make_event(Kind::Custom(9999), "", tags);
+        let j = event_to_json(&event);
+        let tags_arr = j["tags"].as_array().unwrap();
+        assert_eq!(tags_arr.len(), 2);
+        assert_eq!(tags_arr[0][0], "r");
+        assert_eq!(tags_arr[0][1], "https://example.com");
+        assert_eq!(tags_arr[1][0], "z");
+        assert_eq!(tags_arr[1][1], "listItem");
+    }
+}

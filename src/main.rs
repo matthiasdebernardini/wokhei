@@ -306,3 +306,179 @@ fn main() {
     println!("{}", execution.to_json_pretty());
     process::exit(execution.exit_code());
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use agcli::{Command, CommandOutput};
+
+    // -----------------------------------------------------------------------
+    // parse_csv — direct unit tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn parse_csv_none_returns_empty() {
+        assert!(parse_csv(None).is_empty());
+    }
+
+    #[test]
+    fn parse_csv_empty_string_returns_empty() {
+        assert!(parse_csv(Some("")).is_empty());
+    }
+
+    #[test]
+    fn parse_csv_single_value() {
+        assert_eq!(parse_csv(Some("a")), vec!["a"]);
+    }
+
+    #[test]
+    fn parse_csv_multiple_values() {
+        assert_eq!(parse_csv(Some("a,b,c")), vec!["a", "b", "c"]);
+    }
+
+    #[test]
+    fn parse_csv_trims_whitespace() {
+        assert_eq!(parse_csv(Some(" a , b ")), vec!["a", "b"]);
+    }
+
+    // -----------------------------------------------------------------------
+    // parse_bool_flag — tested via AgentCli::run_argv
+    // -----------------------------------------------------------------------
+
+    fn bool_flag_cli() -> AgentCli {
+        AgentCli::new("test", "t").command(Command::new("c", "c").handler(
+            |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
+                let v = parse_bool_flag(req, "flag")?;
+                Ok(CommandOutput::new(json!({ "v": v })))
+            },
+        ))
+    }
+
+    #[test]
+    fn bool_flag_absent_is_false() {
+        let exec = bool_flag_cli().run_argv(["test", "c"]);
+        assert!(exec.envelope().ok());
+        let j: serde_json::Value = serde_json::from_str(&exec.to_json()).unwrap();
+        assert_eq!(j["result"]["v"], false);
+    }
+
+    #[test]
+    fn bool_flag_bare_is_true() {
+        let exec = bool_flag_cli().run_argv(["test", "c", "--flag"]);
+        assert!(exec.envelope().ok());
+        let j: serde_json::Value = serde_json::from_str(&exec.to_json()).unwrap();
+        assert_eq!(j["result"]["v"], true);
+    }
+
+    #[test]
+    fn bool_flag_equals_true_works() {
+        let exec = bool_flag_cli().run_argv(["test", "c", "--flag=true"]);
+        assert!(exec.envelope().ok());
+        let j: serde_json::Value = serde_json::from_str(&exec.to_json()).unwrap();
+        assert_eq!(j["result"]["v"], true);
+    }
+
+    #[test]
+    fn bool_flag_invalid_value_errors() {
+        let exec = bool_flag_cli().run_argv(["test", "c", "--flag=nonsense"]);
+        assert!(!exec.envelope().ok());
+        let j: serde_json::Value = serde_json::from_str(&exec.to_json()).unwrap();
+        assert_eq!(j["error"]["code"], "INVALID_ARGS");
+    }
+
+    // -----------------------------------------------------------------------
+    // parse_usize_flag — tested via AgentCli::run_argv
+    // -----------------------------------------------------------------------
+
+    fn usize_flag_cli() -> AgentCli {
+        AgentCli::new("test", "t").command(Command::new("c", "c").handler(
+            |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
+                let v = parse_usize_flag(req, "limit", 42)?;
+                Ok(CommandOutput::new(json!({ "v": v })))
+            },
+        ))
+    }
+
+    #[test]
+    fn usize_flag_absent_returns_default() {
+        let exec = usize_flag_cli().run_argv(["test", "c"]);
+        assert!(exec.envelope().ok());
+        let j: serde_json::Value = serde_json::from_str(&exec.to_json()).unwrap();
+        assert_eq!(j["result"]["v"], 42);
+    }
+
+    #[test]
+    fn usize_flag_valid_number() {
+        let exec = usize_flag_cli().run_argv(["test", "c", "--limit=10"]);
+        assert!(exec.envelope().ok());
+        let j: serde_json::Value = serde_json::from_str(&exec.to_json()).unwrap();
+        assert_eq!(j["result"]["v"], 10);
+    }
+
+    #[test]
+    fn usize_flag_zero_works() {
+        let exec = usize_flag_cli().run_argv(["test", "c", "--limit=0"]);
+        assert!(exec.envelope().ok());
+        let j: serde_json::Value = serde_json::from_str(&exec.to_json()).unwrap();
+        assert_eq!(j["result"]["v"], 0);
+    }
+
+    #[test]
+    fn usize_flag_invalid_errors() {
+        let exec = usize_flag_cli().run_argv(["test", "c", "--limit=abc"]);
+        assert!(!exec.envelope().ok());
+        let j: serde_json::Value = serde_json::from_str(&exec.to_json()).unwrap();
+        assert_eq!(j["error"]["code"], "INVALID_ARGS");
+    }
+
+    // -----------------------------------------------------------------------
+    // resolve_relay — tested via AgentCli::run_argv
+    // These tests mutate WOKHEI_RELAY env var — run serially via nextest config.
+    // -----------------------------------------------------------------------
+
+    fn relay_cli() -> AgentCli {
+        AgentCli::new("test", "t").command(Command::new("c", "c").handler(
+            |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
+                let v = resolve_relay(req);
+                Ok(CommandOutput::new(json!({ "v": v })))
+            },
+        ))
+    }
+
+    fn relay_result(exec: &agcli::Execution) -> String {
+        let j: serde_json::Value = serde_json::from_str(&exec.to_json()).unwrap();
+        j["result"]["v"].as_str().unwrap().to_string()
+    }
+
+    #[test]
+    fn resolve_relay_default_fallback() {
+        std::env::remove_var("WOKHEI_RELAY");
+        let exec = relay_cli().run_argv(["test", "c"]);
+        assert!(exec.envelope().ok());
+        assert_eq!(relay_result(&exec), "ws://localhost:7777");
+    }
+
+    #[test]
+    fn resolve_relay_flag_override() {
+        std::env::remove_var("WOKHEI_RELAY");
+        let exec = relay_cli().run_argv(["test", "c", "--relay=ws://custom:1234"]);
+        assert!(exec.envelope().ok());
+        assert_eq!(relay_result(&exec), "ws://custom:1234");
+    }
+
+    #[test]
+    fn resolve_relay_env_var() {
+        std::env::set_var("WOKHEI_RELAY", "ws://envrelay:5555");
+        let exec = relay_cli().run_argv(["test", "c"]);
+        assert_eq!(relay_result(&exec), "ws://envrelay:5555");
+        std::env::remove_var("WOKHEI_RELAY");
+    }
+
+    #[test]
+    fn resolve_relay_flag_beats_env() {
+        std::env::set_var("WOKHEI_RELAY", "ws://envrelay:5555");
+        let exec = relay_cli().run_argv(["test", "c", "--relay=ws://flagrelay:9999"]);
+        assert_eq!(relay_result(&exec), "ws://flagrelay:9999");
+        std::env::remove_var("WOKHEI_RELAY");
+    }
+}

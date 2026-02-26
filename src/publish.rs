@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::{self, Read as IoRead};
+use std::io;
 
 use nostr_sdk::prelude::*;
 use serde_json::json;
@@ -8,6 +8,25 @@ use agcli::{CommandError, CommandOutput, NextAction};
 
 use crate::error::AppError;
 use crate::keys::load_keys;
+
+fn read_json_input<R: io::Read>(input: &str, stdin: R) -> Result<String, CommandError> {
+    if input == "-" {
+        let mut buf = String::new();
+        let mut reader = stdin;
+        reader.read_to_string(&mut buf).map_err(|e| {
+            CommandError::from(AppError::Io {
+                reason: e.to_string(),
+            })
+        })?;
+        Ok(buf)
+    } else {
+        fs::read_to_string(input).map_err(|_| {
+            CommandError::from(AppError::Io {
+                reason: format!("Failed to read {input}"),
+            })
+        })
+    }
+}
 
 pub async fn publish(relay: String, input: String) -> Result<CommandOutput, CommandError> {
     let keys = load_keys().map_err(|e| {
@@ -18,21 +37,7 @@ pub async fn publish(relay: String, input: String) -> Result<CommandOutput, Comm
     })?;
 
     // Read JSON input
-    let json_str = if input == "-" {
-        let mut buf = String::new();
-        io::stdin().read_to_string(&mut buf).map_err(|e| {
-            CommandError::from(AppError::Io {
-                reason: e.to_string(),
-            })
-        })?;
-        buf
-    } else {
-        fs::read_to_string(&input).map_err(|_| {
-            CommandError::from(AppError::Io {
-                reason: format!("Failed to read {input}"),
-            })
-        })?
-    };
+    let json_str = read_json_input(&input, io::stdin())?;
 
     // Parse as unsigned event JSON
     let raw: serde_json::Value = serde_json::from_str(&json_str).map_err(|_| {

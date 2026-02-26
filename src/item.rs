@@ -245,3 +245,251 @@ pub async fn add_item(params: ItemParams) -> Result<CommandOutput, CommandError>
     client.disconnect().await;
     result
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // -----------------------------------------------------------------------
+    // parse_coordinate_str
+    // -----------------------------------------------------------------------
+
+    fn test_pubkey_hex() -> String {
+        Keys::generate().public_key().to_hex()
+    }
+
+    #[test]
+    fn parse_coordinate_valid() {
+        let pk = test_pubkey_hex();
+        let input = format!("39998:{pk}:my-list");
+        let (kind, pubkey, d_tag) = parse_coordinate_str(&input).unwrap();
+        assert_eq!(kind, 39998);
+        assert_eq!(pubkey.to_hex(), pk);
+        assert_eq!(d_tag, "my-list");
+    }
+
+    #[test]
+    fn parse_coordinate_too_few_parts() {
+        let err = parse_coordinate_str("39998:abc").unwrap_err();
+        assert_eq!(err.code(), "INVALID_COORDINATE");
+    }
+
+    #[test]
+    fn parse_coordinate_single_part() {
+        let err = parse_coordinate_str("just-one").unwrap_err();
+        assert_eq!(err.code(), "INVALID_COORDINATE");
+    }
+
+    #[test]
+    fn parse_coordinate_invalid_kind() {
+        let pk = test_pubkey_hex();
+        let input = format!("notnum:{pk}:d");
+        let err = parse_coordinate_str(&input).unwrap_err();
+        assert_eq!(err.code(), "INVALID_COORDINATE");
+    }
+
+    #[test]
+    fn parse_coordinate_invalid_pubkey() {
+        let err = parse_coordinate_str("39998:not-a-pubkey:d").unwrap_err();
+        assert_eq!(err.code(), "INVALID_COORDINATE");
+    }
+
+    #[test]
+    fn parse_coordinate_d_tag_with_colons_preserved() {
+        let pk = test_pubkey_hex();
+        let input = format!("39998:{pk}:d:tag:with:colons");
+        let (_, _, d_tag) = parse_coordinate_str(&input).unwrap();
+        assert_eq!(d_tag, "d:tag:with:colons");
+    }
+
+    #[test]
+    fn parse_coordinate_empty_d_tag() {
+        let pk = test_pubkey_hex();
+        let input = format!("39998:{pk}:");
+        let (_, _, d_tag) = parse_coordinate_str(&input).unwrap();
+        assert_eq!(d_tag, "");
+    }
+
+    // -----------------------------------------------------------------------
+    // validate_item_params
+    // -----------------------------------------------------------------------
+
+    fn base_params(header: Option<String>, header_coordinate: Option<String>) -> ItemParams {
+        ItemParams {
+            relay: "ws://localhost:7777".into(),
+            header,
+            header_coordinate,
+            resource: "https://example.com".into(),
+            content: None,
+            fields: vec![],
+            z_tag: "listItem".into(),
+            addressable: false,
+            d_tag: None,
+        }
+    }
+
+    #[test]
+    fn validate_header_only_ok() {
+        let p = base_params(Some("abc123".into()), None);
+        assert!(validate_item_params(&p).is_ok());
+    }
+
+    #[test]
+    fn validate_coordinate_only_ok() {
+        let p = base_params(None, Some("39998:pk:d".into()));
+        assert!(validate_item_params(&p).is_ok());
+    }
+
+    #[test]
+    fn validate_neither_header_nor_coordinate_errors() {
+        let p = base_params(None, None);
+        let err = validate_item_params(&p).unwrap_err();
+        assert_eq!(err.code, "MISSING_ARG");
+    }
+
+    #[test]
+    fn validate_addressable_without_d_tag_errors() {
+        let mut p = base_params(Some("abc".into()), None);
+        p.addressable = true;
+        let err = validate_item_params(&p).unwrap_err();
+        assert_eq!(err.code, "MISSING_ARG");
+    }
+
+    #[test]
+    fn validate_addressable_with_d_tag_ok() {
+        let mut p = base_params(Some("abc".into()), None);
+        p.addressable = true;
+        p.d_tag = Some("my-id".into());
+        assert!(validate_item_params(&p).is_ok());
+    }
+
+    #[test]
+    fn validate_non_addressable_without_d_tag_ok() {
+        let p = base_params(Some("abc".into()), None);
+        assert!(validate_item_params(&p).is_ok());
+    }
+
+    // -----------------------------------------------------------------------
+    // build_item_tags
+    // -----------------------------------------------------------------------
+
+    fn dummy_header_tag() -> Tag {
+        Tag::custom(TagKind::custom("e"), ["abc123"])
+    }
+
+    fn find_tag<'a>(tags: &'a [Tag], kind_str: &str) -> Option<&'a Tag> {
+        tags.iter()
+            .find(|t| t.as_slice().first().map(String::as_str) == Some(kind_str))
+    }
+
+    fn tag_values(tag: &Tag) -> Vec<String> {
+        tag.as_slice().iter().map(ToString::to_string).collect()
+    }
+
+    #[test]
+    fn build_item_tags_has_header_ref() {
+        let tags = build_item_tags(
+            dummy_header_tag(),
+            "https://example.com",
+            "listItem",
+            &[],
+            None,
+        );
+        let e = find_tag(&tags, "e").expect("header ref tag missing");
+        assert!(tag_values(e).contains(&"abc123".to_string()));
+    }
+
+    #[test]
+    fn build_item_tags_has_resource() {
+        let tags = build_item_tags(
+            dummy_header_tag(),
+            "https://example.com",
+            "listItem",
+            &[],
+            None,
+        );
+        let r = find_tag(&tags, "r").expect("r tag missing");
+        assert_eq!(tag_values(r), vec!["r", "https://example.com"]);
+    }
+
+    #[test]
+    fn build_item_tags_has_z_tag() {
+        let tags = build_item_tags(
+            dummy_header_tag(),
+            "https://example.com",
+            "listItem",
+            &[],
+            None,
+        );
+        let z = find_tag(&tags, "z").expect("z tag missing");
+        assert_eq!(tag_values(z), vec!["z", "listItem"]);
+    }
+
+    #[test]
+    fn build_item_tags_has_client() {
+        let tags = build_item_tags(
+            dummy_header_tag(),
+            "https://example.com",
+            "listItem",
+            &[],
+            None,
+        );
+        let c = find_tag(&tags, "client").expect("client tag missing");
+        assert_eq!(tag_values(c), vec!["client", "wokhei"]);
+    }
+
+    #[test]
+    fn build_item_tags_fields_with_equals_become_tags() {
+        let fields = vec!["color=red".to_string(), "size=large".to_string()];
+        let tags = build_item_tags(
+            dummy_header_tag(),
+            "https://example.com",
+            "listItem",
+            &fields,
+            None,
+        );
+        let color = find_tag(&tags, "color").expect("color tag missing");
+        assert_eq!(tag_values(color), vec!["color", "red"]);
+        let size = find_tag(&tags, "size").expect("size tag missing");
+        assert_eq!(tag_values(size), vec!["size", "large"]);
+    }
+
+    #[test]
+    fn build_item_tags_fields_without_equals_skipped() {
+        let fields = vec!["no-equals-here".to_string()];
+        let tags = build_item_tags(
+            dummy_header_tag(),
+            "https://example.com",
+            "listItem",
+            &fields,
+            None,
+        );
+        // Should only have header_ref, r, z, client — no extra tag
+        assert_eq!(tags.len(), 4);
+    }
+
+    #[test]
+    fn build_item_tags_d_tag_present() {
+        let tags = build_item_tags(
+            dummy_header_tag(),
+            "https://example.com",
+            "listItem",
+            &[],
+            Some("my-item"),
+        );
+        let d = find_tag(&tags, "d").expect("d tag missing");
+        assert_eq!(tag_values(d), vec!["d", "my-item"]);
+    }
+
+    #[test]
+    fn build_item_tags_d_tag_absent() {
+        let tags = build_item_tags(
+            dummy_header_tag(),
+            "https://example.com",
+            "listItem",
+            &[],
+            None,
+        );
+        assert!(find_tag(&tags, "d").is_none());
+    }
+}
