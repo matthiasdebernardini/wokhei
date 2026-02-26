@@ -1,2 +1,4 @@
 /target
 .worktrees
+mutants.out/
+mutants.out.old/
