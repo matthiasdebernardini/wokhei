@@ -121,22 +121,43 @@ fn whoami_command() -> Command {
 
 fn create_header_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
     Command::new("create-header", "Create a list header event (kind 9998 or 39998)")
-        .usage("wokhei create-header --name=<name> --title=<title> [--relay=<url>] [--aliases=a,b] [--description=<desc>] [--required=f1,f2] [--recommended=f1,f2] [--tags=t1,t2] [--alt=<text>] [--addressable --d-tag=<id>]")
+        .usage("wokhei create-header --name=<singular> --plural=<plural> [--titles=<singular,plural>] [--relay=<url>] [--description=<desc>] [--required=f1,f2] [--recommended=f1,f2] [--tags=t1,t2] [--alt=<text>] [--addressable --d-tag=<id>]")
         .handler(move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
+            if req.flag("title").is_some() || req.flag("aliases").is_some() {
+                return Err(CommandError::new(
+                    "--title/--aliases are no longer supported",
+                    "INVALID_ARGS",
+                    "Use --name=<singular> --plural=<plural> and optional --titles=<singular,plural>",
+                ));
+            }
+
             let name = req.flag("name").ok_or_else(|| {
-                CommandError::new("--name is required", "MISSING_ARG", "Provide --name=<list-name>")
+                CommandError::new("--name is required", "MISSING_ARG", "Provide --name=<singular>")
             })?;
-            let title = req.flag("title").ok_or_else(|| {
-                CommandError::new("--title is required", "MISSING_ARG", "Provide --title=<list-title>")
+            let plural = req.flag("plural").ok_or_else(|| {
+                CommandError::new(
+                    "--plural is required",
+                    "MISSING_ARG",
+                    "Provide --plural=<plural>",
+                )
             })?;
+            let titles = parse_csv(req.flag("titles"));
+            if !titles.is_empty() && titles.len() != 2 {
+                return Err(CommandError::new(
+                    "--titles requires exactly two comma-separated values",
+                    "INVALID_ARGS",
+                    "Use --titles=<singular,plural>",
+                ));
+            }
+
             let relay = resolve_relay(req);
             let addressable = parse_bool_flag(req, "addressable")?;
 
             let params = header::HeaderParams {
                 relay,
                 name: name.to_string(),
-                aliases: parse_csv(req.flag("aliases")),
-                title: title.to_string(),
+                plural_name: plural.to_string(),
+                titles,
                 description: req.flag("description").map(String::from),
                 required: parse_csv(req.flag("required")),
                 recommended: parse_csv(req.flag("recommended")),
@@ -152,8 +173,16 @@ fn create_header_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
 
 fn add_item_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
     Command::new("add-item", "Add an item to a list (kind 9999 or 39999)")
-        .usage("wokhei add-item --header=<event-id> | --header-coordinate=<kind:pubkey:d-tag> --resource=<url> [--relay=<url>] [--content=<json>] [--fields=k=v,...] [--z-tag=<type>] [--addressable --d-tag=<id>]")
+        .usage("wokhei add-item --header=<event-id> | --header-coordinate=<kind:pubkey:d-tag> --resource=<url> [--relay=<url>] [--content=<json>] [--fields=k=v,...] [--addressable --d-tag=<id>]")
         .handler(move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
+            if req.flag("z-tag").is_some() {
+                return Err(CommandError::new(
+                    "--z-tag is no longer supported",
+                    "INVALID_ARGS",
+                    "The z tag is now derived automatically from --header or --header-coordinate",
+                ));
+            }
+
             let resource = req.flag("resource").ok_or_else(|| {
                 CommandError::new("--resource is required", "MISSING_ARG", "Provide --resource=<url>")
             })?;
@@ -167,7 +196,6 @@ fn add_item_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
                 resource: resource.to_string(),
                 content: req.flag("content").map(String::from),
                 fields: parse_csv(req.flag("fields")),
-                z_tag: req.flag("z-tag").unwrap_or("listItem").to_string(),
                 addressable,
                 d_tag: req.flag("d-tag").map(String::from),
             };

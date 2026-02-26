@@ -102,7 +102,7 @@ fn post_init_actions(pubkey_hex: &str) -> Vec<NextAction> {
     vec![
         NextAction::new("wokhei whoami", "Verify your identity"),
         NextAction::new(
-            "wokhei create-header --name=<name> --title=<title>",
+            "wokhei create-header --name=<singular> --plural=<plural>",
             "Create your first list header",
         ),
         NextAction::new(
@@ -196,7 +196,7 @@ pub fn whoami() -> Result<CommandOutput, CommandError> {
             "List your headers",
         ),
         NextAction::new(
-            "wokhei create-header --name=<name> --title=<title>",
+            "wokhei create-header --name=<singular> --plural=<plural>",
             "Create a new list header",
         ),
     ];
