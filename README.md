@@ -16,6 +16,10 @@ cargo install wokhei
 # Generate a keypair
 wokhei init --generate
 
+# Import a key from stdin (both forms are supported)
+echo "nsec1..." | wokhei init --import=-
+echo "nsec1..." | wokhei init --import -
+
 # Create a list header
 wokhei create-header --name=playlist --title="Jazz Favorites" --tags=jazz,music
 
@@ -24,10 +28,14 @@ wokhei add-item --header=<event-id> --resource="https://example.com/song"
 
 # Query
 wokhei list-headers
-wokhei list-headers --name=playlist
+wokhei list-headers --name=playlist --offset=0 --limit=20
 wokhei list-items <header-id>
 wokhei list-items --header-coordinate="39998:<pubkey>:<d-tag>"
 wokhei inspect <event-id>
+
+# Utility
+wokhei count
+wokhei export --relay=wss://dcosl.brainstorm.world
 
 # Delete (NIP-09 request)
 wokhei delete <event-id>
@@ -52,7 +60,7 @@ wokhei list-headers
   "command": "command-name",
   "timestamp": 1740000000,
   "schema_version": "wokhei.v1",
-  "result": { },
+  "result": {},
   "next_actions": [
     { "command": "wokhei ...", "description": "What this does" }
   ]
