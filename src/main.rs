@@ -55,6 +55,30 @@ fn parse_usize_flag(
     }
 }
 
+fn normalize_import_source(
+    import_flag: Option<&str>,
+    first_arg: Option<&str>,
+) -> Result<Option<String>, CommandError> {
+    match import_flag {
+        None => Ok(None),
+        Some("true") => {
+            let source = first_arg.ok_or_else(|| {
+                CommandError::new(
+                    "--import requires a source",
+                    "INVALID_ARGS",
+                    "Use --import=<file>, --import=-, or --import <file-or->",
+                )
+            })?;
+            Ok(Some(source.to_string()))
+        }
+        Some(source) => Ok(Some(source.to_string())),
+    }
+}
+
+fn resolve_import_source(req: &CommandRequest<'_>) -> Result<Option<String>, CommandError> {
+    normalize_import_source(req.flag("import"), req.arg(0))
+}
+
 /// Resolve relay URL from --relay flag, `WOKHEI_RELAY` env var, or default.
 fn resolve_relay(req: &CommandRequest<'_>) -> String {
     req.flag("relay")
@@ -75,7 +99,7 @@ fn init_command() -> Command {
     .usage("wokhei init --generate | --import=<file-or-stdin>")
     .handler(|req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
         let generate = parse_bool_flag(req, "generate")?;
-        let import = req.flag("import");
+        let import = resolve_import_source(req)?;
 
         if generate && import.is_some() {
             return Err(CommandError::new(
@@ -85,7 +109,7 @@ fn init_command() -> Command {
             ));
         }
 
-        keys::init(generate, import)
+        keys::init(generate, import.as_deref())
     })
 }
 
@@ -154,23 +178,24 @@ fn add_item_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
 
 fn list_headers_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
     Command::new("list-headers", "List header events from a relay")
-        .usage("wokhei list-headers [--relay=<url>] [--author=<pubkey>] [--tag=<topic>] [--name=<substring>] [--limit=<n>]")
+        .usage("wokhei list-headers [--relay=<url>] [--author=<pubkey>] [--tag=<topic>] [--name=<substring>] [--offset=<n>] [--limit=<n>]")
         .handler(
             move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
                 let relay = resolve_relay(req);
                 let author = req.flag("author").map(String::from);
                 let tag = req.flag("tag").map(String::from);
                 let name = req.flag("name").map(String::from);
+                let offset = parse_usize_flag(req, "offset", 0)?;
                 let limit = parse_usize_flag(req, "limit", 50)?;
 
-                rt.block_on(query::list_headers(relay, author, tag, name, limit))
+                rt.block_on(query::list_headers(relay, author, tag, name, offset, limit))
             },
         )
 }
 
 fn list_items_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
     Command::new("list-items", "List items belonging to a header")
-        .usage("wokhei list-items <header-id> [--header-coordinate=<kind:pubkey:d-tag>] [--relay=<url>] [--limit=<n>]")
+        .usage("wokhei list-items [<header-id>] [--header-coordinate=<kind:pubkey:d-tag>] [--relay=<url>] [--limit=<n>]")
         .handler(
             move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
                 let header_id = req.arg(0).map(String::from);
@@ -228,6 +253,28 @@ fn delete_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
                 let event_ids: Vec<String> = positionals.to_vec();
 
                 rt.block_on(delete::delete(relay, event_ids))
+            },
+        )
+}
+
+fn count_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
+    Command::new("count", "Count header and item events on a relay")
+        .usage("wokhei count [--relay=<url>]")
+        .handler(
+            move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
+                let relay = resolve_relay(req);
+                rt.block_on(query::count(relay))
+            },
+        )
+}
+
+fn export_command(rt: Arc<tokio::runtime::Runtime>) -> Command {
+    Command::new("export", "Export all headers and items as JSON backup")
+        .usage("wokhei export [--relay=<url>]")
+        .handler(
+            move |req: &CommandRequest<'_>, _ctx: &mut ExecutionContext| {
+                let relay = resolve_relay(req);
+                rt.block_on(query::export(relay))
             },
         )
 }
@@ -299,6 +346,8 @@ fn main() {
     .command(list_items_command(rt.clone()))
     .command(inspect_command(rt.clone()))
     .command(delete_command(rt.clone()))
+    .command(count_command(rt.clone()))
+    .command(export_command(rt.clone()))
     .command(publish_command(rt));
 
     let execution = cli.run_env();
@@ -311,6 +360,28 @@ fn main() {
 mod tests {
     use super::*;
     use agcli::{Command, CommandOutput};
+
+    // -----------------------------------------------------------------------
+    // normalize_import_source
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn import_equals_form_is_preserved() {
+        let out = normalize_import_source(Some("-"), None).expect("valid import source");
+        assert_eq!(out.as_deref(), Some("-"));
+    }
+
+    #[test]
+    fn import_space_form_uses_positional_source() {
+        let out =
+            normalize_import_source(Some("true"), Some("/dev/stdin")).expect("valid import source");
+        assert_eq!(out.as_deref(), Some("/dev/stdin"));
+    }
+
+    #[test]
+    fn import_missing_source_errors() {
+        assert!(normalize_import_source(Some("true"), None).is_err());
+    }
 
     // -----------------------------------------------------------------------
     // parse_csv — direct unit tests

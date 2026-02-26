@@ -60,9 +60,10 @@ wokhei init --generate
 
 Returns `pubkey` (hex) and `npub` (bech32). Keys saved to `~/.wokhei/keys`.
 
-Import existing key from stdin:
+Import existing key from stdin (`--import=-` and `--import -` are both supported):
 ```bash
 echo "nsec1..." | wokhei init --import=-
+echo "nsec1..." | wokhei init --import -
 ```
 
 ### 2. Create a List Header
@@ -112,8 +113,8 @@ wokhei list-headers --tag=jazz
 # Filter by name substring (client-side)
 wokhei list-headers --name=playlist
 
-# Combine filters with limit
-wokhei list-headers --author=<pubkey> --tag=jazz --limit=10
+# Combine filters with offset + limit (pagination)
+wokhei list-headers --author=<pubkey> --tag=jazz --offset=20 --limit=10
 
 # List items by header event ID (default limit: 100)
 wokhei list-items <header-event-id>
@@ -125,7 +126,17 @@ wokhei list-items --header-coordinate="39998:<pubkey>:<d-tag>"
 wokhei inspect <event-id>
 ```
 
-### 5. Delete (NIP-09)
+### 5. Count and Export
+
+```bash
+# Fast counts for headers/items on relay
+wokhei count
+
+# Full backup: all headers + linked items (JSON to stdout)
+wokhei export --relay=wss://dcosl.brainstorm.world
+```
+
+### 6. Delete (NIP-09)
 
 ```bash
 wokhei delete <event-id>
