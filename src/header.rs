@@ -5,6 +5,10 @@ use serde_json::json;
 use crate::error::AppError;
 use crate::keys::load_keys;
 
+// Re-export from dcosl-core for use in other wokhei modules
+pub use dcosl_core::header::HeaderParams as DcoslHeaderParams;
+pub use dcosl_core::header::build_header_tags as dcosl_build_header_tags;
+
 pub struct HeaderParams {
     pub relay: String,
     pub name: String,
@@ -19,55 +23,25 @@ pub struct HeaderParams {
     pub d_tag: Option<String>,
 }
 
+impl HeaderParams {
+    fn to_dcosl_params(&self) -> DcoslHeaderParams {
+        DcoslHeaderParams {
+            name: self.name.clone(),
+            plural_name: self.plural_name.clone(),
+            titles: self.titles.clone(),
+            description: self.description.clone(),
+            required: self.required.clone(),
+            recommended: self.recommended.clone(),
+            tags_list: self.tags_list.clone(),
+            alt: self.alt.clone(),
+            d_tag: self.d_tag.clone(),
+            client_name: Some("wokhei".to_string()),
+        }
+    }
+}
+
 fn build_header_tags(params: &HeaderParams) -> Vec<Tag> {
-    let HeaderParams {
-        name,
-        plural_name,
-        titles,
-        description,
-        required,
-        recommended,
-        tags_list,
-        alt,
-        d_tag,
-        ..
-    } = params;
-
-    let mut event_tags: Vec<Tag> = Vec::new();
-
-    event_tags.push(Tag::custom(
-        TagKind::custom("names"),
-        [name.clone(), plural_name.clone()],
-    ));
-
-    if titles.len() == 2 {
-        event_tags.push(Tag::custom(TagKind::custom("titles"), titles.clone()));
-    }
-
-    if let Some(desc) = description {
-        event_tags.push(Tag::custom(TagKind::custom("description"), [desc.clone()]));
-    }
-    if !required.is_empty() {
-        event_tags.push(Tag::custom(TagKind::custom("required"), required.clone()));
-    }
-    event_tags.extend(
-        recommended
-            .iter()
-            .map(|field| Tag::custom(TagKind::custom("recommended"), [field.clone()])),
-    );
-    event_tags.extend(tags_list.iter().map(Tag::hashtag));
-
-    let alt_text = alt
-        .clone()
-        .unwrap_or_else(|| format!("DCoSL list header: {name} / {plural_name}"));
-    event_tags.push(Tag::custom(TagKind::custom("alt"), [alt_text]));
-    event_tags.push(Tag::custom(TagKind::custom("client"), ["wokhei"]));
-
-    if let Some(d) = d_tag {
-        event_tags.push(Tag::identifier(d));
-    }
-
-    event_tags
+    dcosl_build_header_tags(&params.to_dcosl_params())
 }
 
 pub async fn create_header(mut params: HeaderParams) -> Result<CommandOutput, CommandError> {
@@ -90,6 +64,7 @@ pub async fn create_header(mut params: HeaderParams) -> Result<CommandOutput, Co
     };
 
     let event_tags = build_header_tags(&params);
+    let tags_count = event_tags.len();
     let builder = EventBuilder::new(kind, "").tags(event_tags);
 
     let client = Client::builder().signer(keys.clone()).build();
@@ -109,8 +84,8 @@ pub async fn create_header(mut params: HeaderParams) -> Result<CommandOutput, Co
                 "event_id": event_id,
                 "kind": kind.as_u16(),
                 "pubkey": pubkey_hex,
-                "created_at": jiff::Timestamp::now().to_string(),
-                "tags_count": params.tags_list.len(),
+                "created_at": jiff::Timestamp::now().as_second(),
+                "tags_count": tags_count,
             });
 
             if let Some(ref d) = params.d_tag {

@@ -8,91 +8,13 @@ use agcli::{CommandError, CommandOutput, NextAction};
 
 use crate::error::AppError;
 
+// Re-export from dcosl-core
+pub use dcosl_core::query::{
+    event_to_json, header_d_tag, paginate, sort_event_json_desc, sort_events_desc,
+};
+
 const QUERY_TIMEOUT: Duration = Duration::from_secs(10);
 const FETCH_PAGE_SIZE: usize = 500;
-
-fn event_to_json(event: &Event) -> serde_json::Value {
-    let tags: Vec<Vec<String>> = event
-        .tags
-        .iter()
-        .map(|t| t.as_slice().iter().map(ToString::to_string).collect())
-        .collect();
-
-    let mut obj = json!({
-        "event_id": event.id.to_hex(),
-        "kind": event.kind.as_u16(),
-        "pubkey": event.pubkey.to_hex(),
-        "created_at": event.created_at.as_secs(),
-        "tags": tags,
-        "content": event.content,
-        "sig": event.sig.to_string(),
-    });
-
-    // Extract common DCoSL fields from tags for convenience
-    for tag in event.tags.iter() {
-        let parts = tag.as_slice();
-        if parts.len() >= 2 {
-            let key = parts[0].as_str();
-            match key {
-                "names" => {
-                    obj["name"] = json!(parts[1].as_str());
-                    if parts.len() >= 3 {
-                        obj["plural_name"] = json!(parts[2].as_str());
-                        obj["names"] = json!([parts[1].as_str(), parts[2].as_str()]);
-                    }
-                }
-                "titles" => {
-                    obj["title"] = json!(parts[1].as_str());
-                    if parts.len() >= 3 {
-                        obj["plural_title"] = json!(parts[2].as_str());
-                        obj["titles"] = json!([parts[1].as_str(), parts[2].as_str()]);
-                    }
-                }
-                "description" => {
-                    obj["description"] = json!(parts[1].as_str());
-                }
-                "d" => {
-                    let pubkey_hex = event.pubkey.to_hex();
-                    let d_val = parts[1].as_str();
-                    obj["coordinate"] =
-                        json!(format!("{}:{}:{}", event.kind.as_u16(), pubkey_hex, d_val));
-                }
-                _ => {}
-            }
-        }
-    }
-
-    obj
-}
-
-fn sort_event_json_desc(events: &mut [serde_json::Value]) {
-    events.sort_by(|a, b| {
-        let a_created = a["created_at"].as_u64().unwrap_or(0);
-        let b_created = b["created_at"].as_u64().unwrap_or(0);
-        let a_id = a["event_id"].as_str().unwrap_or("");
-        let b_id = b["event_id"].as_str().unwrap_or("");
-
-        b_created.cmp(&a_created).then_with(|| a_id.cmp(b_id))
-    });
-}
-
-fn sort_events_desc(events: &mut [Event]) {
-    events.sort_by(|a, b| {
-        b.created_at
-            .as_secs()
-            .cmp(&a.created_at.as_secs())
-            .then_with(|| a.id.to_hex().cmp(&b.id.to_hex()))
-    });
-}
-
-fn paginate<T: Clone>(values: &[T], offset: usize, limit: usize) -> Vec<T> {
-    if offset >= values.len() || limit == 0 {
-        return Vec::new();
-    }
-
-    let end = offset.saturating_add(limit).min(values.len());
-    values[offset..end].to_vec()
-}
 
 fn header_query_command(
     relay: &str,
@@ -131,17 +53,6 @@ fn item_add_command(relay: &str, header_ref: &str, coordinate_mode: bool) -> Str
     }
 }
 
-fn header_d_tag(header_event: &Event) -> Option<String> {
-    header_event.tags.iter().find_map(|t| {
-        let parts = t.as_slice();
-        if parts.first().map(String::as_str) == Some("d") {
-            parts.get(1).cloned()
-        } else {
-            None
-        }
-    })
-}
-
 async fn connect_client(relay: &str) -> Result<Client, AppError> {
     let client = Client::default();
     client
@@ -176,7 +87,7 @@ fn build_header_filter(
     Ok(filter)
 }
 
-async fn fetch_all_events(
+pub async fn fetch_all_events(
     client: &Client,
     relay: &str,
     base_filter: Filter,
@@ -234,15 +145,14 @@ async fn count_filter(client: &Client, relay: &str, filter: Filter) -> Result<us
         })
     })?;
 
-    if let Ok(count) = relay_handle
-        .count_events(filter.clone(), QUERY_TIMEOUT)
+    relay_handle
+        .count_events(filter, QUERY_TIMEOUT)
         .await
-    {
-        return Ok(count);
-    }
-
-    let events = fetch_all_events(client, relay, filter).await?;
-    Ok(events.len())
+        .map_err(|_| {
+            CommandError::from(AppError::RelayUnreachable {
+                url: relay.to_string(),
+            })
+        })
 }
 
 pub async fn list_headers(
@@ -379,7 +289,7 @@ pub async fn list_items(
 
     let (all_items, header_ref, coordinate_mode) = if let Some(ref coord_str) = header_coordinate {
         let normalized_ref = normalize_coordinate_ref(coord_str)?;
-        let items = fetch_items_by_z(&client, &normalized_ref, limit).await;
+        let items = fetch_items_by_parent_ref(&client, &relay, &normalized_ref, limit).await?;
         (items, normalized_ref, true)
     } else {
         let id_str = header_id.as_deref().unwrap_or("");
@@ -390,7 +300,7 @@ pub async fn list_items(
         })?;
         let header_event = fetch_header_event_by_id(&client, &relay, event_id).await?;
         let (resolved_ref, resolved_coordinate_mode) = z_ref_for_header_event(&header_event)?;
-        let items = fetch_items_by_z(&client, &resolved_ref, limit).await;
+        let items = fetch_items_by_parent_ref(&client, &relay, &resolved_ref, limit).await?;
         (items, resolved_ref, resolved_coordinate_mode)
     };
 
@@ -427,28 +337,13 @@ pub async fn list_items(
 }
 
 fn normalize_coordinate_ref(coord_str: &str) -> Result<String, CommandError> {
-    let parts: Vec<&str> = coord_str.splitn(3, ':').collect();
-    if parts.len() != 3 {
-        return Err(CommandError::from(AppError::InvalidCoordinate {
-            input: coord_str.to_string(),
-        }));
-    }
-    let kind_num: u16 = parts[0].parse().map_err(|_| {
-        CommandError::from(AppError::InvalidCoordinate {
-            input: coord_str.to_string(),
-        })
-    })?;
+    let (kind_num, pubkey, d_tag) = dcosl_core::item::parse_coordinate_str(coord_str)
+        .map_err(|e| CommandError::from(AppError::from(e)))?;
     if kind_num != 39998 {
         return Err(CommandError::from(AppError::InvalidCoordinate {
             input: coord_str.to_string(),
         }));
     }
-    let pubkey = PublicKey::parse(parts[1]).map_err(|_| {
-        CommandError::from(AppError::InvalidCoordinate {
-            input: coord_str.to_string(),
-        })
-    })?;
-    let d_tag = parts[2];
 
     Ok(format!("39998:{}:{}", pubkey.to_hex(), d_tag))
 }
@@ -494,18 +389,53 @@ fn z_ref_for_header_event(header_event: &Event) -> Result<(String, bool), Comman
     }
 }
 
-async fn fetch_items_by_z(client: &Client, z_ref: &str, limit: usize) -> Vec<serde_json::Value> {
-    let filter = Filter::new()
-        .kinds(vec![Kind::Custom(9999), Kind::Custom(39999)])
-        .custom_tag(SingleLetterTag::lowercase(Alphabet::Z), z_ref.to_string())
+async fn fetch_items_by_parent_ref(
+    client: &Client,
+    relay: &str,
+    parent_ref: &str,
+    limit: usize,
+) -> Result<Vec<serde_json::Value>, CommandError> {
+    let item_kinds = vec![Kind::Custom(9999), Kind::Custom(39999)];
+
+    let z_filter = Filter::new()
+        .kinds(item_kinds.clone())
+        .custom_tag(
+            SingleLetterTag::lowercase(Alphabet::Z),
+            parent_ref.to_string(),
+        )
         .limit(limit);
 
-    let events = client
-        .fetch_events(filter, QUERY_TIMEOUT)
-        .await
-        .unwrap_or_default();
+    let a_filter = Filter::new()
+        .kinds(item_kinds)
+        .custom_tag(
+            SingleLetterTag::lowercase(Alphabet::A),
+            parent_ref.to_string(),
+        )
+        .limit(limit);
 
-    events.iter().map(event_to_json).collect()
+    let relay_err = || {
+        CommandError::from(AppError::RelayUnreachable {
+            url: relay.to_string(),
+        })
+    };
+
+    let (z_result, a_result) = tokio::join!(
+        client.fetch_events(z_filter, QUERY_TIMEOUT),
+        client.fetch_events(a_filter, QUERY_TIMEOUT),
+    );
+
+    let z_events = z_result.map_err(|_| relay_err())?;
+    let a_events = a_result.map_err(|_| relay_err())?;
+
+    let mut seen = HashSet::new();
+    let items = z_events
+        .iter()
+        .chain(a_events.iter())
+        .filter(|e| seen.insert(e.id))
+        .map(event_to_json)
+        .collect();
+
+    Ok(items)
 }
 
 async fn fetch_items_for_header_event(
@@ -525,44 +455,46 @@ async fn fetch_items_for_header_event(
 pub async fn count(relay: String) -> Result<CommandOutput, CommandError> {
     let client = connect_client(&relay).await.map_err(CommandError::from)?;
 
-    let result = async {
-        let headers_total = count_filter(
-            &client,
-            &relay,
-            Filter::new().kinds(vec![Kind::Custom(9998), Kind::Custom(39998)]),
-        )
-        .await?;
-        let headers_regular = count_filter(
-            &client,
-            &relay,
-            Filter::new().kinds(vec![Kind::Custom(9998)]),
-        )
-        .await?;
-        let headers_addressable = count_filter(
-            &client,
-            &relay,
-            Filter::new().kinds(vec![Kind::Custom(39998)]),
-        )
-        .await?;
-
-        let items_total = count_filter(
-            &client,
-            &relay,
-            Filter::new().kinds(vec![Kind::Custom(9999), Kind::Custom(39999)]),
-        )
-        .await?;
-        let items_regular = count_filter(
-            &client,
-            &relay,
-            Filter::new().kinds(vec![Kind::Custom(9999)]),
-        )
-        .await?;
-        let items_addressable = count_filter(
-            &client,
-            &relay,
-            Filter::new().kinds(vec![Kind::Custom(39999)]),
-        )
-        .await?;
+    let count_fut = async {
+        let (
+            headers_total,
+            headers_regular,
+            headers_addressable,
+            items_total,
+            items_regular,
+            items_addressable,
+        ) = tokio::try_join!(
+            count_filter(
+                &client,
+                &relay,
+                Filter::new().kinds(vec![Kind::Custom(9998), Kind::Custom(39998)]),
+            ),
+            count_filter(
+                &client,
+                &relay,
+                Filter::new().kinds(vec![Kind::Custom(9998)]),
+            ),
+            count_filter(
+                &client,
+                &relay,
+                Filter::new().kinds(vec![Kind::Custom(39998)]),
+            ),
+            count_filter(
+                &client,
+                &relay,
+                Filter::new().kinds(vec![Kind::Custom(9999), Kind::Custom(39999)]),
+            ),
+            count_filter(
+                &client,
+                &relay,
+                Filter::new().kinds(vec![Kind::Custom(9999)]),
+            ),
+            count_filter(
+                &client,
+                &relay,
+                Filter::new().kinds(vec![Kind::Custom(39999)]),
+            ),
+        )?;
 
         let actions = vec![
             NextAction::new(
@@ -589,8 +521,14 @@ pub async fn count(relay: String) -> Result<CommandOutput, CommandError> {
             }
         }))
         .next_actions(actions))
-    }
-    .await;
+    };
+
+    let result = match tokio::time::timeout(Duration::from_secs(30), count_fut).await {
+        Ok(inner) => inner,
+        Err(_) => Err(CommandError::from(AppError::RelayUnreachable {
+            url: relay,
+        })),
+    };
 
     client.disconnect().await;
     result
@@ -675,7 +613,7 @@ pub async fn inspect(relay: String, event_id_str: String) -> Result<CommandOutpu
     };
 
     let event = events.into_iter().next().ok_or_else(|| {
-        CommandError::from(AppError::HeaderNotFound {
+        CommandError::from(AppError::EventNotFound {
             event_id: event_id_str.clone(),
         })
         .next_actions(vec![NextAction::new(
@@ -689,7 +627,6 @@ pub async fn inspect(relay: String, event_id_str: String) -> Result<CommandOutpu
 
     let mut actions = vec![];
 
-    // Context-sensitive next actions
     if kind == 9998 || kind == 39998 {
         actions.push(NextAction::new(
             format!("wokhei list-items --relay={relay} {event_id_str}"),

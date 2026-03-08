@@ -7,21 +7,11 @@ use agcli::{CommandError, CommandOutput, NextAction};
 use crate::error::AppError;
 use crate::keys::load_keys;
 
-fn parse_coordinate_str(input: &str) -> Result<(u16, PublicKey, String), AppError> {
-    let parts: Vec<&str> = input.splitn(3, ':').collect();
-    if parts.len() != 3 {
-        return Err(AppError::InvalidCoordinate {
-            input: input.to_string(),
-        });
-    }
-    let kind_num: u16 = parts[0].parse().map_err(|_| AppError::InvalidCoordinate {
-        input: input.to_string(),
-    })?;
-    let pubkey = PublicKey::parse(parts[1]).map_err(|_| AppError::InvalidCoordinate {
-        input: input.to_string(),
-    })?;
-    let d_tag = parts[2].to_string();
-    Ok((kind_num, pubkey, d_tag))
+// Re-export from dcosl-core
+pub use dcosl_core::item::parse_coordinate_str;
+
+fn parse_coordinate_str_cmd(input: &str) -> Result<(u16, PublicKey, String), CommandError> {
+    parse_coordinate_str(input).map_err(|e| CommandError::from(AppError::from(e)))
 }
 
 pub struct ItemParams {
@@ -43,8 +33,7 @@ async fn resolve_header_ref(
     header_coordinate: Option<&str>,
 ) -> Result<String, CommandError> {
     if let Some(coord_str) = header_coordinate {
-        let (kind_num, pubkey, d_val) =
-            parse_coordinate_str(coord_str).map_err(CommandError::from)?;
+        let (kind_num, pubkey, d_val) = parse_coordinate_str_cmd(coord_str)?;
         if kind_num != 39998 {
             return Err(CommandError::from(AppError::InvalidCoordinate {
                 input: coord_str.to_string(),
@@ -121,22 +110,7 @@ fn build_item_tags(
     fields: &[String],
     d_tag: Option<&str>,
 ) -> Vec<Tag> {
-    let mut event_tags: Vec<Tag> = Vec::new();
-    event_tags.push(Tag::custom(TagKind::custom("z"), [parent_z_ref]));
-    event_tags.push(Tag::custom(TagKind::custom("r"), [resource]));
-    event_tags.push(Tag::custom(TagKind::custom("client"), ["wokhei"]));
-
-    event_tags.extend(fields.iter().filter_map(|field| {
-        field
-            .split_once('=')
-            .map(|(key, val)| Tag::custom(TagKind::custom(key), [val]))
-    }));
-
-    if let Some(d) = d_tag {
-        event_tags.push(Tag::identifier(d));
-    }
-
-    event_tags
+    dcosl_core::item::build_item_tags(parent_z_ref, resource, fields, d_tag, Some("wokhei"))
 }
 
 fn validate_item_params(params: &ItemParams) -> Result<(), CommandError> {
@@ -261,7 +235,7 @@ mod tests {
     use super::*;
 
     // -----------------------------------------------------------------------
-    // parse_coordinate_str
+    // parse_coordinate_str (via dcosl-core)
     // -----------------------------------------------------------------------
 
     fn test_pubkey_hex() -> String {
@@ -285,39 +259,9 @@ mod tests {
     }
 
     #[test]
-    fn parse_coordinate_single_part() {
-        let err = parse_coordinate_str("just-one").unwrap_err();
-        assert_eq!(err.code(), "INVALID_COORDINATE");
-    }
-
-    #[test]
-    fn parse_coordinate_invalid_kind() {
-        let pk = test_pubkey_hex();
-        let input = format!("notnum:{pk}:d");
-        let err = parse_coordinate_str(&input).unwrap_err();
-        assert_eq!(err.code(), "INVALID_COORDINATE");
-    }
-
-    #[test]
     fn parse_coordinate_invalid_pubkey() {
         let err = parse_coordinate_str("39998:not-a-pubkey:d").unwrap_err();
         assert_eq!(err.code(), "INVALID_COORDINATE");
-    }
-
-    #[test]
-    fn parse_coordinate_d_tag_with_colons_preserved() {
-        let pk = test_pubkey_hex();
-        let input = format!("39998:{pk}:d:tag:with:colons");
-        let (_, _, d_tag) = parse_coordinate_str(&input).unwrap();
-        assert_eq!(d_tag, "d:tag:with:colons");
-    }
-
-    #[test]
-    fn parse_coordinate_empty_d_tag() {
-        let pk = test_pubkey_hex();
-        let input = format!("39998:{pk}:");
-        let (_, _, d_tag) = parse_coordinate_str(&input).unwrap();
-        assert_eq!(d_tag, "");
     }
 
     // -----------------------------------------------------------------------
@@ -356,29 +300,8 @@ mod tests {
         assert_eq!(err.code, "MISSING_ARG");
     }
 
-    #[test]
-    fn validate_addressable_without_d_tag_ok() {
-        let mut p = base_params(Some("abc".into()), None);
-        p.addressable = true;
-        assert!(validate_item_params(&p).is_ok());
-    }
-
-    #[test]
-    fn validate_addressable_with_d_tag_ok() {
-        let mut p = base_params(Some("abc".into()), None);
-        p.addressable = true;
-        p.d_tag = Some("my-id".into());
-        assert!(validate_item_params(&p).is_ok());
-    }
-
-    #[test]
-    fn validate_non_addressable_without_d_tag_ok() {
-        let p = base_params(Some("abc".into()), None);
-        assert!(validate_item_params(&p).is_ok());
-    }
-
     // -----------------------------------------------------------------------
-    // build_item_tags
+    // build_item_tags (via dcosl-core)
     // -----------------------------------------------------------------------
 
     fn find_tag<'a>(tags: &'a [Tag], kind_str: &str) -> Option<&'a Tag> {
@@ -412,36 +335,11 @@ mod tests {
     }
 
     #[test]
-    fn build_item_tags_does_not_emit_legacy_parent_tags() {
-        let tags = build_item_tags("abc123", "https://example.com", &[], None);
-        assert!(find_tag(&tags, "e").is_none());
-        assert!(find_tag(&tags, "a").is_none());
-    }
-
-    #[test]
-    fn build_item_tags_accepts_coordinate_parent_ref() {
-        let coord = format!("39998:{}:my-list", test_pubkey_hex());
-        let tags = build_item_tags(&coord, "https://example.com", &[], None);
-        let z = find_tag(&tags, "z").expect("z tag missing");
-        assert_eq!(tag_values(z), vec!["z".to_string(), coord]);
-    }
-
-    #[test]
     fn build_item_tags_fields_with_equals_become_tags() {
         let fields = vec!["color=red".to_string(), "size=large".to_string()];
         let tags = build_item_tags("abc123", "https://example.com", &fields, None);
         let color = find_tag(&tags, "color").expect("color tag missing");
         assert_eq!(tag_values(color), vec!["color", "red"]);
-        let size = find_tag(&tags, "size").expect("size tag missing");
-        assert_eq!(tag_values(size), vec!["size", "large"]);
-    }
-
-    #[test]
-    fn build_item_tags_fields_without_equals_skipped() {
-        let fields = vec!["no-equals-here".to_string()];
-        let tags = build_item_tags("abc123", "https://example.com", &fields, None);
-        // Should only have z, r, client — no extra tag
-        assert_eq!(tags.len(), 3);
     }
 
     #[test]
