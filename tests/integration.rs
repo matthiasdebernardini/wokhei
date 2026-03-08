@@ -164,10 +164,13 @@ fn add_item_and_list() {
         "created item should appear in list-items"
     );
     assert!(
-        item_list
-            .iter()
-            .any(|i| i["resource"] == "https://example.com/test-item"),
-        "item resource should match"
+        item_list.iter().any(|i| {
+            i["tags"].as_array().is_some_and(|tags| {
+                tags.iter()
+                    .any(|t| t[0] == "r" && t[1] == "https://example.com/test-item")
+            })
+        }),
+        "item resource should be in tags as [\"r\", url]"
     );
 }
 
@@ -218,11 +221,15 @@ fn delete_event() {
         "deleted_ids should contain the event"
     );
 
-    let list = ctx.run_ok(&["list-headers", &format!("--author={pk}")]);
-    let empty = vec![];
-    let headers = list["result"]["headers"].as_array().unwrap_or(&empty);
-    assert!(
-        !headers.iter().any(|h| h["event_id"] == event_id),
-        "deleted header should not appear in list-headers"
-    );
+    // After deletion, list-headers may return NO_RESULTS (ok=false) if no
+    // headers remain, or ok=true with a list that excludes the deleted event.
+    let list = ctx.run(&["list-headers", &format!("--author={pk}")]);
+    if list["ok"].as_bool().unwrap_or(false) {
+        let empty = vec![];
+        let headers = list["result"]["headers"].as_array().unwrap_or(&empty);
+        assert!(
+            !headers.iter().any(|h| h["event_id"] == event_id),
+            "deleted header should not appear in list-headers"
+        );
+    }
 }

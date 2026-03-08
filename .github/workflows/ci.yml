@@ -103,11 +103,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    services:
-      strfry:
-        image: ghcr.io/hoytech/strfry:latest
-        ports:
-          - 7777:7777
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -122,18 +117,27 @@ jobs:
         with:
           tool: cargo-nextest
 
+      - name: Start strfry relay
+        run: |
+          IMAGE="ghcr.io/hoytech/strfry@sha256:7cf3b97c66a8c3087e16e5d31a3bb8eb92312f08dd969ff3dced9625242ac55f"
+          docker run -d --name strfry -p 7777:7777 \
+            -v "${{ github.workspace }}/.github/strfry-ci.conf:/app/strfry.conf:ro" \
+            --tmpfs /app/strfry-db \
+            "$IMAGE" relay
+
       - name: Wait for strfry
         run: |
           for i in $(seq 1 30); do
-            if curl -sf -o /dev/null http://localhost:7777 2>/dev/null || \
-               curl -sf -o /dev/null -w '%{http_code}' http://localhost:7777 2>/dev/null | grep -qE '4[0-9]{2}'; then
-              echo "strfry is ready"
+            STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:7777 2>/dev/null || true)
+            if [ "$STATUS" != "000" ] && [ -n "$STATUS" ]; then
+              echo "strfry is ready (HTTP $STATUS)"
               exit 0
             fi
             echo "Waiting for strfry... ($i/30)"
             sleep 1
           done
           echo "strfry failed to start"
+          docker logs strfry
           exit 1
 
       - name: Run integration tests
