@@ -237,6 +237,8 @@ wokhei delete <event-id-1> <event-id-2> <event-id-3>
 
 ## Raw Event Publishing
 
+> **Warning**: `publish` passes tags through **verbatim with no validation**. Incorrect tag formats (wrong `z` values, missing `names` plural, combined `recommended` fields, etc.) will be published as-is. Prefer `create-header` and `add-item` which enforce correct DCoSL tag structure automatically.
+
 For custom events not covered by built-in commands:
 
 ```bash
