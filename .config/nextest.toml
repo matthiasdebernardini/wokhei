@@ -4,3 +4,7 @@ max-threads = 1
 [[profile.default.overrides]]
 filter = "test(resolve_relay)"
 test-group = "serial-env"
+
+[[profile.default.overrides]]
+filter = "kind(test)"
+slow-timeout = { period = "30s", terminate-after = 2 }

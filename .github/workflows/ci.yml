@@ -97,3 +97,46 @@ jobs:
           tool: cargo-nextest
 
       - run: cargo nextest run
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      strfry:
+        image: ghcr.io/hoytech/strfry:latest
+        ports:
+          - 7777:7777
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
+
+      - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2.8.2
+
+      - name: Install nextest
+        uses: taiki-e/install-action@70e00552f3196d9a4c7dde7c57ef4c4830d422dd # v2.68.2
+        with:
+          tool: cargo-nextest
+
+      - name: Wait for strfry
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf -o /dev/null http://localhost:7777 2>/dev/null || \
+               curl -sf -o /dev/null -w '%{http_code}' http://localhost:7777 2>/dev/null | grep -qE '4[0-9]{2}'; then
+              echo "strfry is ready"
+              exit 0
+            fi
+            echo "Waiting for strfry... ($i/30)"
+            sleep 1
+          done
+          echo "strfry failed to start"
+          exit 1
+
+      - name: Run integration tests
+        run: cargo nextest run --run-ignored ignored-only
+        env:
+          WOKHEI_RELAY: ws://localhost:7777

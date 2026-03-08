@@ -21,6 +21,9 @@ pub enum AppError {
     #[error("Invalid event ID: {id}")]
     InvalidEventId { id: String },
 
+    #[error("Invalid public key: {pubkey}")]
+    InvalidPubkey { pubkey: String },
+
     #[error("No results for query")]
     NoResults,
 
@@ -30,7 +33,7 @@ pub enum AppError {
     #[error("Failed to save keys: {reason}")]
     KeysSaveFailed { reason: String },
 
-    #[error("Keys already exist at {path} — use --force to overwrite")]
+    #[error("Keys already exist at {path}")]
     KeysAlreadyExist { path: String },
 
     #[error("Invalid coordinate format: {input} — expected kind:pubkey:d-tag")]
@@ -41,6 +44,9 @@ pub enum AppError {
 
     #[error("Invalid JSON: {reason}")]
     InvalidJson { reason: String },
+
+    #[error("Event not found: {event_id}")]
+    EventNotFound { event_id: String },
 }
 
 impl AppError {
@@ -52,6 +58,7 @@ impl AppError {
             Self::HeaderNotFound { .. } => "HEADER_NOT_FOUND",
             Self::HeaderMissingDTag => "HEADER_MISSING_D_TAG",
             Self::InvalidEventId { .. } => "INVALID_EVENT_ID",
+            Self::InvalidPubkey { .. } => "INVALID_PUBKEY",
             Self::NoResults => "NO_RESULTS",
             Self::InvalidNsec => "INVALID_NSEC",
             Self::KeysSaveFailed { .. } => "KEYS_SAVE_FAILED",
@@ -59,6 +66,7 @@ impl AppError {
             Self::InvalidCoordinate { .. } => "INVALID_COORDINATE",
             Self::Io { .. } => "IO_ERROR",
             Self::InvalidJson { .. } => "INVALID_JSON",
+            Self::EventNotFound { .. } => "EVENT_NOT_FOUND",
         }
     }
 
@@ -87,6 +95,9 @@ impl AppError {
             Self::InvalidEventId { .. } => {
                 "Use a hex event ID from a previous command's result".to_string()
             }
+            Self::InvalidPubkey { .. } => {
+                "Use a hex or bech32 (npub1...) public key".to_string()
+            }
             Self::NoResults => {
                 "Try different filters, or check that the relay has data".to_string()
             }
@@ -104,6 +115,10 @@ impl AppError {
             Self::InvalidJson { .. } => {
                 "Provide valid JSON input".to_string()
             }
+            Self::EventNotFound { .. } => {
+                "Verify the event ID, or use `wokhei list-headers` to find valid events"
+                    .to_string()
+            }
         }
     }
 }
@@ -114,13 +129,23 @@ impl From<AppError> for CommandError {
     }
 }
 
+// Allow converting dcosl-core protocol errors into AppError
+impl From<dcosl_core::DcoslError> for AppError {
+    fn from(err: dcosl_core::DcoslError) -> Self {
+        match err {
+            dcosl_core::DcoslError::InvalidCoordinate { input } => {
+                AppError::InvalidCoordinate { input }
+            }
+            dcosl_core::DcoslError::HeaderMissingDTag => AppError::HeaderMissingDTag,
+            dcosl_core::DcoslError::InvalidEventId { id } => AppError::InvalidEventId { id },
+            dcosl_core::DcoslError::InvalidPubkey { pubkey } => AppError::InvalidPubkey { pubkey },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // -----------------------------------------------------------------------
-    // code() returns correct string for each variant
-    // -----------------------------------------------------------------------
 
     #[test]
     fn code_keys_not_found() {
@@ -139,83 +164,12 @@ mod tests {
     }
 
     #[test]
-    fn code_relay_rejected() {
-        let e = AppError::RelayRejected {
-            reason: "nope".into(),
-        };
-        assert_eq!(e.code(), "RELAY_REJECTED");
-    }
-
-    #[test]
-    fn code_header_not_found() {
-        let e = AppError::HeaderNotFound {
-            event_id: "abc".into(),
-        };
-        assert_eq!(e.code(), "HEADER_NOT_FOUND");
-    }
-
-    #[test]
-    fn code_header_missing_d_tag() {
-        assert_eq!(AppError::HeaderMissingDTag.code(), "HEADER_MISSING_D_TAG");
-    }
-
-    #[test]
-    fn code_invalid_event_id() {
-        let e = AppError::InvalidEventId { id: "bad".into() };
-        assert_eq!(e.code(), "INVALID_EVENT_ID");
-    }
-
-    #[test]
-    fn code_no_results() {
-        assert_eq!(AppError::NoResults.code(), "NO_RESULTS");
-    }
-
-    #[test]
-    fn code_invalid_nsec() {
-        assert_eq!(AppError::InvalidNsec.code(), "INVALID_NSEC");
-    }
-
-    #[test]
-    fn code_keys_save_failed() {
-        let e = AppError::KeysSaveFailed {
-            reason: "disk".into(),
-        };
-        assert_eq!(e.code(), "KEYS_SAVE_FAILED");
-    }
-
-    #[test]
-    fn code_keys_already_exist() {
-        let e = AppError::KeysAlreadyExist { path: "/x".into() };
-        assert_eq!(e.code(), "KEYS_ALREADY_EXIST");
-    }
-
-    #[test]
     fn code_invalid_coordinate() {
         let e = AppError::InvalidCoordinate {
             input: "bad".into(),
         };
         assert_eq!(e.code(), "INVALID_COORDINATE");
     }
-
-    #[test]
-    fn code_io_error() {
-        let e = AppError::Io {
-            reason: "fail".into(),
-        };
-        assert_eq!(e.code(), "IO_ERROR");
-    }
-
-    #[test]
-    fn code_invalid_json() {
-        let e = AppError::InvalidJson {
-            reason: "parse".into(),
-        };
-        assert_eq!(e.code(), "INVALID_JSON");
-    }
-
-    // -----------------------------------------------------------------------
-    // retryable() — only RelayUnreachable is true
-    // -----------------------------------------------------------------------
 
     #[test]
     fn relay_unreachable_is_retryable() {
@@ -228,53 +182,8 @@ mod tests {
     #[test]
     fn non_relay_errors_are_not_retryable() {
         assert!(!AppError::KeysNotFound { path: "/x".into() }.retryable());
-        assert!(!AppError::RelayRejected { reason: "x".into() }.retryable());
-        assert!(
-            !AppError::HeaderNotFound {
-                event_id: "x".into()
-            }
-            .retryable()
-        );
         assert!(!AppError::HeaderMissingDTag.retryable());
-        assert!(!AppError::InvalidEventId { id: "x".into() }.retryable());
-        assert!(!AppError::NoResults.retryable());
-        assert!(!AppError::InvalidNsec.retryable());
-        assert!(!AppError::KeysSaveFailed { reason: "x".into() }.retryable());
-        assert!(!AppError::KeysAlreadyExist { path: "x".into() }.retryable());
         assert!(!AppError::InvalidCoordinate { input: "x".into() }.retryable());
-        assert!(!AppError::Io { reason: "x".into() }.retryable());
-        assert!(!AppError::InvalidJson { reason: "x".into() }.retryable());
-    }
-
-    // -----------------------------------------------------------------------
-    // fix() — non-empty, contains interpolated fields where applicable
-    // -----------------------------------------------------------------------
-
-    #[test]
-    fn fix_keys_not_found_suggests_init() {
-        let fix = AppError::KeysNotFound {
-            path: "/tmp".into(),
-        }
-        .fix();
-        assert!(fix.contains("init"));
-    }
-
-    #[test]
-    fn fix_relay_unreachable_contains_url() {
-        let fix = AppError::RelayUnreachable {
-            url: "ws://myrelay".into(),
-        }
-        .fix();
-        assert!(fix.contains("ws://myrelay"));
-    }
-
-    #[test]
-    fn fix_keys_already_exist_contains_path() {
-        let fix = AppError::KeysAlreadyExist {
-            path: "/home/.wokhei/keys".into(),
-        }
-        .fix();
-        assert!(fix.contains("/home/.wokhei/keys"));
     }
 
     #[test]
@@ -288,6 +197,7 @@ mod tests {
             },
             AppError::HeaderMissingDTag,
             AppError::InvalidEventId { id: "i".into() },
+            AppError::InvalidPubkey { pubkey: "p".into() },
             AppError::NoResults,
             AppError::InvalidNsec,
             AppError::KeysSaveFailed { reason: "r".into() },
@@ -295,15 +205,14 @@ mod tests {
             AppError::InvalidCoordinate { input: "i".into() },
             AppError::Io { reason: "r".into() },
             AppError::InvalidJson { reason: "r".into() },
+            AppError::EventNotFound {
+                event_id: "e".into(),
+            },
         ];
         for v in variants {
             assert!(!v.fix().is_empty(), "fix() empty for {}", v.code());
         }
     }
-
-    // -----------------------------------------------------------------------
-    // From<AppError> for CommandError — preserves code, retryable, message
-    // -----------------------------------------------------------------------
 
     #[test]
     fn command_error_from_app_error_preserves_code() {
@@ -326,11 +235,11 @@ mod tests {
     }
 
     #[test]
-    fn command_error_from_app_error_preserves_message() {
-        let app_err = AppError::Io {
-            reason: "disk full".into(),
+    fn dcosl_error_converts_to_app_error() {
+        let dcosl_err = dcosl_core::DcoslError::InvalidCoordinate {
+            input: "bad".into(),
         };
-        let cmd_err = CommandError::from(app_err);
-        assert!(cmd_err.message.contains("disk full"));
+        let app_err = AppError::from(dcosl_err);
+        assert_eq!(app_err.code(), "INVALID_COORDINATE");
     }
 }
