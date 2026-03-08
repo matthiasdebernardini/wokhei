@@ -122,6 +122,7 @@ jobs:
           IMAGE="ghcr.io/hoytech/strfry@sha256:7cf3b97c66a8c3087e16e5d31a3bb8eb92312f08dd969ff3dced9625242ac55f"
           docker run -d --name strfry -p 7777:7777 \
             -v "${{ github.workspace }}/.github/strfry-ci.conf:/app/strfry.conf:ro" \
+            --tmpfs /app/strfry-db \
             "$IMAGE" relay
 
       - name: Wait for strfry
