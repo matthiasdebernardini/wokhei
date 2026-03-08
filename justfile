@@ -47,3 +47,20 @@ changelog:
 # Dry-run publish check
 publish-check:
     cargo publish --dry-run
+
+# Install development tools (sem, etc.)
+setup-tools:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    TMPDIR=$(mktemp -d)
+    trap 'rm -rf "$TMPDIR"' EXIT
+    git clone --depth 1 https://github.com/Ataraxy-Labs/sem "$TMPDIR/sem"
+    cargo install --path "$TMPDIR/sem/crates/sem-cli"
+
+# Semantic diff of current branch vs main
+sem-diff:
+    sem diff --from main --to HEAD --file-exts .rs
+
+# Semantic diff (JSON output)
+sem-diff-json:
+    sem diff --from main --to HEAD --file-exts .rs --format json
