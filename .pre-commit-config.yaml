@@ -41,3 +41,12 @@ repos:
         pass_filenames: false
         always_run: true
         priority: 1
+
+      - id: sem-diff
+        name: sem diff (semantic changes)
+        language: system
+        entry: bash -c 'sem diff --staged --file-exts .rs || true'
+        pass_filenames: false
+        always_run: true
+        verbose: true
+        priority: 2
