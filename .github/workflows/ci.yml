@@ -120,10 +120,8 @@ jobs:
       - name: Start strfry relay
         run: |
           IMAGE="ghcr.io/hoytech/strfry@sha256:7cf3b97c66a8c3087e16e5d31a3bb8eb92312f08dd969ff3dced9625242ac55f"
-          docker pull "$IMAGE"
-          docker run --rm "$IMAGE" export-config > /tmp/strfry.conf
           docker run -d --name strfry -p 7777:7777 \
-            -v /tmp/strfry.conf:/app/strfry.conf:ro \
+            -v "${{ github.workspace }}/.github/strfry-ci.conf:/app/strfry.conf:ro" \
             "$IMAGE" relay
 
       - name: Wait for strfry
