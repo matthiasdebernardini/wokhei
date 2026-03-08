@@ -103,11 +103,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    services:
-      strfry:
-        image: ghcr.io/hoytech/strfry@sha256:7cf3b97c66a8c3087e16e5d31a3bb8eb92312f08dd969ff3dced9625242ac55f # latest
-        ports:
-          - 7777:7777
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -122,6 +117,15 @@ jobs:
         with:
           tool: cargo-nextest
 
+      - name: Start strfry relay
+        run: |
+          IMAGE="ghcr.io/hoytech/strfry@sha256:7cf3b97c66a8c3087e16e5d31a3bb8eb92312f08dd969ff3dced9625242ac55f"
+          docker pull "$IMAGE"
+          docker run --rm "$IMAGE" export-config > /tmp/strfry.conf
+          docker run -d --name strfry -p 7777:7777 \
+            -v /tmp/strfry.conf:/app/strfry.conf:ro \
+            "$IMAGE" relay
+
       - name: Wait for strfry
         run: |
           for i in $(seq 1 30); do
@@ -134,6 +138,7 @@ jobs:
             sleep 1
           done
           echo "strfry failed to start"
+          docker logs strfry
           exit 1
 
       - name: Run integration tests
