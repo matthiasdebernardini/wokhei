@@ -21,6 +21,9 @@ pub enum AppError {
     #[error("Invalid event ID: {id}")]
     InvalidEventId { id: String },
 
+    #[error("Invalid public key: {pubkey}")]
+    InvalidPubkey { pubkey: String },
+
     #[error("No results for query")]
     NoResults,
 
@@ -52,6 +55,7 @@ impl AppError {
             Self::HeaderNotFound { .. } => "HEADER_NOT_FOUND",
             Self::HeaderMissingDTag => "HEADER_MISSING_D_TAG",
             Self::InvalidEventId { .. } => "INVALID_EVENT_ID",
+            Self::InvalidPubkey { .. } => "INVALID_PUBKEY",
             Self::NoResults => "NO_RESULTS",
             Self::InvalidNsec => "INVALID_NSEC",
             Self::KeysSaveFailed { .. } => "KEYS_SAVE_FAILED",
@@ -86,6 +90,9 @@ impl AppError {
             }
             Self::InvalidEventId { .. } => {
                 "Use a hex event ID from a previous command's result".to_string()
+            }
+            Self::InvalidPubkey { .. } => {
+                "Use a hex or bech32 (npub1...) public key".to_string()
             }
             Self::NoResults => {
                 "Try different filters, or check that the relay has data".to_string()
@@ -166,6 +173,14 @@ mod tests {
     }
 
     #[test]
+    fn code_invalid_pubkey() {
+        let e = AppError::InvalidPubkey {
+            pubkey: "bad".into(),
+        };
+        assert_eq!(e.code(), "INVALID_PUBKEY");
+    }
+
+    #[test]
     fn code_no_results() {
         assert_eq!(AppError::NoResults.code(), "NO_RESULTS");
     }
@@ -237,6 +252,7 @@ mod tests {
         );
         assert!(!AppError::HeaderMissingDTag.retryable());
         assert!(!AppError::InvalidEventId { id: "x".into() }.retryable());
+        assert!(!AppError::InvalidPubkey { pubkey: "x".into() }.retryable());
         assert!(!AppError::NoResults.retryable());
         assert!(!AppError::InvalidNsec.retryable());
         assert!(!AppError::KeysSaveFailed { reason: "x".into() }.retryable());
@@ -288,6 +304,7 @@ mod tests {
             },
             AppError::HeaderMissingDTag,
             AppError::InvalidEventId { id: "i".into() },
+            AppError::InvalidPubkey { pubkey: "p".into() },
             AppError::NoResults,
             AppError::InvalidNsec,
             AppError::KeysSaveFailed { reason: "r".into() },

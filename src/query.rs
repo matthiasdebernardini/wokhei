@@ -162,8 +162,8 @@ fn build_header_filter(
 
     if let Some(author_hex) = author {
         let pk = PublicKey::parse(author_hex).map_err(|_| {
-            CommandError::from(AppError::InvalidEventId {
-                id: author_hex.clone(),
+            CommandError::from(AppError::InvalidPubkey {
+                pubkey: author_hex.clone(),
             })
         })?;
         filter = filter.author(pk);
